@@ -1,0 +1,133 @@
+:root {
+    --orange-primary: #FF7900;
+    --orange-dark: #F16E00;
+    --orange-light: #FFF0E5;
+    --black: #000000;
+    --white: #FFFFFF;
+    --gray-light: #F5F5F5;
+    --gray: #999999;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--white);
+    color: var(--black);
+}
+
+.navbar {
+    background-color: var(--white);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 0.5rem 1rem;
+}
+
+.navbar-brand {
+    color: var(--black);
+    font-size: 1.8rem;
+    font-weight: bold;
+    padding: 0;
+}
+
+.navbar-nav .nav-link {
+    color: var(--black);
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: color 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:focus {
+    color: var(--orange-primary);
+}
+
+.btn-orange {
+    background-color: var(--orange-primary);
+    border-color: var(--orange-primary);
+    color: var(--white);
+}
+
+.btn-orange:hover {
+    background-color: var(--orange-dark);
+    border-color: var(--orange-dark);
+    color: var(--white);
+}
+
+.dropdown-menu {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.dropdown-item {
+    color: var(--black);
+    padding: 0.75rem 1.5rem;
+}
+
+.dropdown-item:hover {
+    background-color: var(--orange-light);
+    color: var(--orange-primary);
+}
+
+.main-content {
+    flex: 1;
+    padding: 2rem 0;
+    background-color: var(--gray-light);
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.card-header {
+    background-color: var(--white);
+    border-bottom: 2px solid var(--orange-primary);
+    font-weight: bold;
+}
+
+.alert {
+    border: none;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.alert-success {
+    background-color: #E5F6E5;
+    color: #1E8F1E;
+}
+
+.alert-danger {
+    background-color: #FFE5E5;
+    color: #D12E2E;
+}
+
+footer {
+    background-color: var(--black);
+    color: var(--white);
+    padding: 2rem 0;
+    margin-top: auto;
+}
+
+footer a {
+    color: var(--white);
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: var(--orange-primary);
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 2px solid var(--gray);
+    padding: 0.75rem;
+}
+
+.form-control:focus {
+    border-color: var(--orange-primary);
+    box-shadow: 0 0 0 0.2rem rgba(255,121,0,0.25);
+}

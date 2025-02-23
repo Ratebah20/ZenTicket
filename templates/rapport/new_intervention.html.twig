@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ rapport is defined ? 'Modifier' : 'Nouveau' }} rapport d'intervention{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_rapport_index') }}">Rapports</a></li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {{ rapport is defined ? 'Modifier' : 'Nouveau' }} rapport d'intervention
+            </li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h1 class="h3 mb-0">{{ rapport is defined ? 'Modifier' : 'Nouveau' }} rapport d'intervention</h1>
+        </div>
+        <div class="card-body">
+            {{ form_start(form) }}
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ form_row(form.titre) }}
+                        {{ form_row(form.service) }}
+                        {{ form_row(form.ticketPrincipal) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(form.tempsPasse) }}
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-12">
+                        {{ form_row(form.contenu) }}
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-12">
+                        {{ form_row(form.recommandations) }}
+                    </div>
+                </div>
+
+                <div class="text-end mt-3">
+                    <a href="{{ path('app_rapport_index') }}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">
+                        {{ rapport is defined ? 'Enregistrer les modifications' : 'Créer le rapport' }}
+                    </button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

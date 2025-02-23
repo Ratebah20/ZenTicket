@@ -1,0 +1,105 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon Profil{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <h1>Mon Profil</h1>
+
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Informations personnelles</h5>
+                <p><strong>Nom :</strong> {{ app.user.nom }}</p>
+                <p><strong>Email :</strong> {{ app.user.email }}</p>
+                <p><strong>Rôle :</strong>
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <span class="badge bg-danger">Administrateur</span>
+                    {% elseif is_granted('ROLE_TECHNICIEN') %}
+                        <span class="badge bg-info">Technicien</span>
+                    {% else %}
+                        <span class="badge bg-success">Utilisateur</span>
+                    {% endif %}
+                </p>
+
+                {% if is_granted('ROLE_TECHNICIEN') %}
+                    <div class="alert alert-info">
+                        <p><strong>Tickets assignés :</strong> {{ app.user.tickets|length }}</p>
+                    </div>
+                {% endif %}
+
+                
+                <div class="mt-3">
+                    <a href="{{ path('app_profile_edit') }}" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i>Modifier mes informations
+                    </a>
+                    <a href="{{ path('app_profile_change_password') }}" class="btn btn-secondary">
+                        <i class="fas fa-key me-1"></i>Changer mon mot de passe
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if is_granted('ROLE_USER') or is_granted('ROLE_TECHNICIEN') %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        {% if is_granted('ROLE_TECHNICIEN') %}
+                            Tickets assignés
+                        {% else %}
+                            Mes tickets
+                        {% endif %}
+                    </h5>
+                    
+                    {% if tickets is empty %}
+                        <p>Aucun ticket à afficher.</p>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Titre</th>
+                                        <th>Description</th>
+                                        <th>Statut</th>
+                                        <th>Date de création</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ticket in tickets|slice(0, 5) %}
+                                        <tr>
+                                            <td>{{ ticket.titre }}</td>
+                                            <td>{{ ticket.description }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ ticket.statut == 'résolu' ? 'success' : 
+                                                    (ticket.statut == 'en cours' ? 'warning' : 'primary') }}">
+                                                    {{ ticket.statut }}
+                                                </span>
+                                            </td>
+                                            <td>{{ ticket.dateCreation|date('d/m/Y H:i') }}</td>
+                                            <td>
+                                                <a href="#" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-eye me-1"></i>Voir
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if tickets|length > 5 %}
+                            <div class="mt-3">
+                                <a href="{{ path('app_profile_tickets') }}" class="btn btn-link">
+                                    Voir tous les tickets
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

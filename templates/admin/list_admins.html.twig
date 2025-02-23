@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des administrateurs{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Liste des administrateurs</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for admin in admins %}
+            <tr>
+                <td>{{ admin.id }}</td>
+                <td>{{ admin.nom }}</td>
+                <td>{{ admin.email }}</td>
+                <td>
+                    {# Ajouter ici les actions possibles #}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('admin_create_admin') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Ajouter un administrateur
+    </a>
+</div>
+{% endblock %}

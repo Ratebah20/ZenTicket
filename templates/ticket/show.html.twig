@@ -1,0 +1,150 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails du ticket{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ path('app_profile_tickets') }}">Tickets</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ ticket.titre }}</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">{{ ticket.titre }}</h1>
+                <span class="badge {{ ticket.prioriteClass }} bg-opacity-75">
+                    Priorité {{ ticket.priorite|capitalize }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Catégorie :</strong> {{ ticket.categorie ? ticket.categorie.nom : 'Non catégorisé' }}</p>
+                        <p><strong>Statut :</strong> 
+                            <span class="badge {% if ticket.statut == 'nouveau' %}bg-info
+                                {% elseif ticket.statut == 'en cours' %}bg-warning
+                                {% elseif ticket.statut == 'résolu' %}bg-success
+                                {% elseif ticket.statut == 'clôturé' %}bg-secondary
+                                {% else %}bg-secondary{% endif %}">
+                                {{ ticket.statut|capitalize }}
+                            </span>
+                        </p>
+                        <p><strong>Date de création :</strong> {{ ticket.dateCreation|date('d/m/Y H:i') }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Technicien assigné :</strong> 
+                            {% if ticket.technicien %}
+                                {{ ticket.technicien.nom }}
+                            {% else %}
+                                <span class="text-muted">Non assigné</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <h5>Description</h5>
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            {{ ticket.description|nl2br }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    {% if is_granted('ROLE_ADMIN') or app.user == ticket.utilisateur %}
+                        <a href="{{ path('app_ticket_edit', {'id': ticket.id}) }}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        <form action="{{ path('app_ticket_delete', {'id': ticket.id}) }}" method="post" style="display:inline;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ ticket.id) }}">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce ticket ?');">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if is_granted('ROLE_TECHNICIEN') and ticket.statut != 'clôturé' %}
+                        <form action="{{ path('app_ticket_change_status', {'id': ticket.id}) }}" method="post" style="display:inline;">
+                            <input type="hidden" name="_token" value="{{ csrf_token('change-status' ~ ticket.id) }}">
+                            <select name="status" class="form-select d-inline-block w-auto">
+                                <option value="nouveau" {% if ticket.statut == 'nouveau' %}selected{% endif %}>Nouveau</option>
+                                <option value="en cours" {% if ticket.statut == 'en cours' %}selected{% endif %}>En cours</option>
+                                <option value="résolu" {% if ticket.statut == 'résolu' %}selected{% endif %}>Résolu</option>
+                            </select>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-sync-alt"></i> Changer le statut
+                            </button>
+                        </form>
+
+                        {% if ticket.statut != 'résolu' %}
+                            <form action="{{ path('app_ticket_resolve', {'id': ticket.id}) }}" method="post" style="display:inline;">
+                                <input type="hidden" name="_token" value="{{ csrf_token('resolve' ~ ticket.id) }}">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-check-circle"></i> Marquer comme résolu
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+
+                    <a href="{{ path('app_profile_tickets') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Section Commentaires #}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Commentaires</h5>
+        </div>
+        <div class="card-body">
+            {# Liste des commentaires #}
+            {% for commentaire in ticket.commentaires %}
+                <div class="comment-item mb-3 p-3 border-bottom">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{{ commentaire.auteur.nom }}</strong>
+                            <small class="text-muted">{{ commentaire.dateCreation|date('d/m/Y H:i') }}</small>
+                        </div>
+                        {% if app.user == commentaire.auteur %}
+                            <div>
+                                <a href="#" class="text-danger" onclick="return confirm('Supprimer ce commentaire ?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-2">
+                        {{ commentaire.contenu|nl2br }}
+                    </div>
+                    {% if commentaire.pieceJointe %}
+                        <div class="mt-2">
+                            <a href="{{ asset('uploads/commentaires/' ~ commentaire.pieceJointe) }}" target="_blank">
+                                <i class="fas fa-paperclip"></i> Pièce jointe
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p class="text-muted">Aucun commentaire pour le moment.</p>
+            {% endfor %}
+
+            {# Formulaire d'ajout de commentaire #}
+            <div class="mt-4">
+                <h6>Ajouter un commentaire</h6>
+                {{ form_start(commentForm) }}
+                    {{ form_row(commentForm.contenu) }}
+                    {{ form_row(commentForm.pieceJointe) }}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-comment"></i> Commenter
+                    </button>
+                {{ form_end(commentForm) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}

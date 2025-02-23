@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Profil Technicien{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Mon Profil</h1>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Informations personnelles</h5>
+            <p><strong>Nom :</strong> {{ technicien.nom }}</p>
+            <p><strong>Email :</strong> {{ technicien.email }}</p>
+            <p><strong>Nombre de tickets en charge :</strong> {{ technicien.tickets|length }}</p>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a href="{{ path('technicien_dashboard') }}" class="btn btn-primary">Retour au tableau de bord</a>
+    </div>
+</div>
+{% endblock %}

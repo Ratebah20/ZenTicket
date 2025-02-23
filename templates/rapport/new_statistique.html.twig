@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ rapport is defined ? 'Modifier' : 'Nouveau' }} rapport statistique{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_rapport_index') }}">Rapports</a></li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {{ rapport is defined ? 'Modifier' : 'Nouveau' }} rapport statistique
+            </li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h1 class="h3 mb-0">{{ rapport is defined ? 'Modifier' : 'Nouveau' }} rapport statistique</h1>
+        </div>
+        <div class="card-body">
+            {{ form_start(form) }}
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ form_row(form.titre) }}
+                        {{ form_row(form.service) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(form.periode) }}
+                        {{ form_row(form.dateDebut) }}
+                        {{ form_row(form.dateFin) }}
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-12">
+                        {{ form_row(form.contenu) }}
+                    </div>
+                </div>
+
+                <div class="text-end mt-3">
+                    <a href="{{ path('app_rapport_index') }}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">
+                        {{ rapport is defined ? 'Enregistrer les modifications' : 'Générer le rapport' }}
+                    </button>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</div>
+{% endblock %}

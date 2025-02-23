@@ -1,0 +1,181 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Tickets{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Mes Tickets</h1>
+
+    {# Section tickets en cours #}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Tickets en cours</h3>
+        </div>
+        <div class="card-body">
+            {% set activeTickets = tickets|filter(ticket => ticket.statut != 'clôturé') %}
+            {% if activeTickets is empty %}
+                <p>Aucun ticket en cours.</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Titre</th>
+                                <th>Description</th>
+                                <th>Priorité</th>
+                                <th>Statut</th>
+                                <th>Date de création</th>
+                                <th>Technicien assigné</th>
+                                <th>Commentaires</th>
+                                <th>Valider Solution    </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in activeTickets %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="text-decoration-none">
+                                            {{ ticket.titre }}
+                                        </a>
+                                    </td>
+                                    <td>{{ ticket.description|length > 50 ? ticket.description|slice(0, 50) ~ '...' : ticket.description }}</td>
+                                    <td>
+                                        <span class="badge {{ ticket.prioriteClass }}">
+                                            {{ ticket.priorite|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ ticket.statut == 'en cours' ? 'warning' : 'primary' }}">
+                                            {{ ticket.statut }}
+                                        </span>
+                                    </td>
+                                    <td>{{ ticket.dateCreation|date('d/m/Y H:i') }}</td>
+                                    <td>{{ ticket.technicien ? ticket.technicien.nom : 'Non assigné' }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ ticket.commentaires|length }} commentaire(s)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-info me-2" data-bs-toggle="modal" data-bs-target="#solutionActiveModal{{ ticket.id }}">
+                                            <i class="fas fa-eye"></i> Voir
+                                        </button>
+
+                                        {% if ticket.statut == 'résolu' %}
+                                            <form action="{{ path('app_ticket_validate_solution', {'id': ticket.id}) }}" method="POST" style="display: inline;">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('validate' ~ ticket.id) }}">
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check-circle"></i> Clôturer
+                                                </button>
+                                            </form>
+                                        {% endif %}
+
+                                        <!-- Modal pour afficher la solution du ticket en cours -->
+                                        <div class="modal fade" id="solutionActiveModal{{ ticket.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Détails du ticket</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p><strong>Problème :</strong> {{ ticket.description }}</p>
+                                                        {% if ticket.solution %}
+                                                            <p><strong>Solution proposée :</strong> {{ ticket.solution }}</p>
+                                                        {% else %}
+                                                            <p><em>Aucune solution n'a encore été proposée.</em></p>
+                                                        {% endif %}
+                                                        <p><strong>Technicien assigné :</strong> {{ ticket.technicien ? ticket.technicien.nom : 'Non assigné' }}</p>
+                                                        <p><strong>Statut :</strong> {{ ticket.statut }}</p>
+                                                        <p><strong>Date de création :</strong> {{ ticket.dateCreation|date('d/m/Y H:i') }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Section tickets clôturés #}
+    <div class="card">
+        <div class="card-header">
+            <h3>Tickets clôturés</h3>
+        </div>
+        <div class="card-body">
+            {% set resolvedTickets = tickets|filter(ticket => ticket.statut == 'clôturé') %}
+            {% if resolvedTickets is empty %}
+                <p>Aucun ticket clôturé.</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Titre</th>
+                                <th>Description</th>
+                                <th>Date de résolution</th>
+                                <th>Technicien</th>
+                                <th>Solution</th>
+                                <th>Commentaires</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in resolvedTickets %}
+                                <tr>
+                                    <td>{{ ticket.titre }}</td>
+                                    <td>{{ ticket.description }}</td>
+                                    <td>{{ ticket.dateResolution|date('d/m/Y H:i') }}</td>
+                                    <td>{{ ticket.technicien.nom }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#solutionModal{{ ticket.id }}">
+                                            <i class="fas fa-info-circle"></i> Voir la solution
+                                        </button>
+
+                                        <!-- Modal pour afficher la solution -->
+                                        <div class="modal fade" id="solutionModal{{ ticket.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Solution apportée</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p><strong>Problème :</strong> {{ ticket.description }}</p>
+                                                        <p><strong>Solution :</strong> {{ ticket.solution }}</p>
+                                                        <p><strong>Résolu par :</strong> {{ ticket.technicien.nom }}</p>
+                                                        <p><strong>Date de résolution :</strong> {{ ticket.dateResolution|date('d/m/Y H:i') }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ ticket.commentaires|length }} commentaire(s)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <form action="{{ path('app_ticket_validate_solution', {'id': ticket.id}) }}" method="POST" style="display: inline;">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('validate' ~ ticket.id) }}">
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="fas fa-check-circle"></i> Clôturer le ticket
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

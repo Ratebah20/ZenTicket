@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Interventions sur le ticket{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_rapport_index') }}">Rapports</a></li>
+            <li class="breadcrumb-item active">Interventions sur le ticket</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Interventions sur le ticket</h1>
+        {% if is_granted('ROLE_TECHNICIEN') %}
+            <a href="{{ path('app_rapport_intervention_new') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouvelle intervention
+            </a>
+        {% endif %}
+    </div>
+
+    {% if rapports is empty %}
+        <div class="alert alert-info">
+            Aucune intervention trouvée pour ce ticket.
+        </div>
+    {% else %}
+        <div class="list-group">
+            {% for rapport in rapports %}
+                <a href="{{ path('app_rapport_show', {'id': rapport.id}) }}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ rapport.titre }}</h5>
+                        <small class="text-muted">{{ rapport.dateCreation|date('d/m/Y H:i') }}</small>
+                    </div>
+                    <p class="mb-1">
+                        <span class="badge bg-primary">Intervention</span>
+                        <span class="badge bg-secondary">{{ rapport.service }}</span>
+                        {% if rapport.tempsPasse %}
+                            <span class="badge bg-info">{{ rapport.tempsPasse }} minutes</span>
+                        {% endif %}
+                    </p>
+                    <small class="text-muted">Par {{ rapport.auteur.nom }}</small>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

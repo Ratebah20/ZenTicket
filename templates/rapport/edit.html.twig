@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier le rapport{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_rapport_index') }}">Rapports</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('app_rapport_show', {'id': rapport.id}) }}">{{ rapport.titre }}</a></li>
+            <li class="breadcrumb-item active">Modifier</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h1 class="h3 mb-0">Modifier le rapport</h1>
+        </div>
+        <div class="card-body">
+            {% if rapport.type == 'intervention' %}
+                {{ include('rapport/new_intervention.html.twig', {
+                    'form': form,
+                    'rapport': rapport
+                }) }}
+            {% else %}
+                {{ include('rapport/new_statistique.html.twig', {
+                    'form': form,
+                    'rapport': rapport
+                }) }}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

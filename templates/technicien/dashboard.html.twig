@@ -1,0 +1,202 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard Technicien{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <h1>Tableau de bord - Technicien</h1>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {# Nouveaux tickets à prendre en charge #}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Nouveaux tickets disponibles</h5>
+                </div>
+                <div class="card-body">
+                    {% if newTickets is empty %}
+                        <p>Aucun nouveau ticket disponible.</p>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Titre</th>
+                                        <th>Catégorie</th>
+                                        <th>Description</th>
+                                        <th>Statut</th>
+                                        <th>Date de création</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ticket in newTickets %}
+                                        <tr>
+                                            <td>{{ ticket.titre }}</td>
+                                            <td>{% if ticket.categorie %}{{ ticket.categorie.nom }}{% else %}Non catégorisé{% endif %}</td>
+                                            <td>{{ ticket.description }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ ticket.statut == 'nouveau' ? 'primary' : 
+                                                    ticket.statut == 'en cours' ? 'warning' : 
+                                                    ticket.statut == 'résolu' ? 'success' : 'secondary' }}">
+                                                    {{ ticket.statut }}
+                                                </span>
+                                            </td>
+                                            <td>{{ ticket.dateCreation|date('d/m/Y H:i') }}</td>
+                                            <td>
+                                                <form action="{{ path('technicien_take_ticket', {'id': ticket.id}) }}" method="post" style="display: inline;">
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="fas fa-hand-paper me-1"></i>Prendre en charge
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Tickets assignés #}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">Mes tickets en cours</h5>
+                </div>
+                <div class="card-body">
+                    {% if assignedTickets is empty %}
+                        <p>Aucun ticket n'est actuellement assigné.</p>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Titre</th>
+                                        <th>Catégorie</th>
+                                        <th>Description</th>
+                                        <th>Statut</th>
+                                        <th>Solution</th>
+                                        <th>Date de création</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ticket in assignedTickets %}
+                                        <tr>
+                                            <td>{{ ticket.titre }}</td>
+                                            <td>{% if ticket.categorie %}{{ ticket.categorie.nom }}{% else %}Non catégorisé{% endif %}</td>
+                                            <td>{{ ticket.description }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ ticket.statut == 'nouveau' ? 'primary' : 
+                                                    ticket.statut == 'en cours' ? 'warning' : 
+                                                    ticket.statut == 'résolu' ? 'success' : 'secondary' }}">
+                                                    {{ ticket.statut }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if ticket.solution %}
+                                                    <span class="text-success">{{ ticket.solution }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">Aucune solution</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ ticket.dateCreation|date('d/m/Y H:i') }}</td>
+                                            <td>
+                                                <div class="action-buttons">
+                                                    {% if ticket.statut == 'nouveau' %}
+                                                        <form action="{{ path('technicien_update_status', {'id': ticket.id}) }}" method="post" class="d-inline">
+                                                            <input type="hidden" name="status" value="en cours">
+                                                            <button type="submit" class="btn btn-primary btn-sm">Mettre en cours</button>
+                                                        </form>
+                                                    {% endif %}
+
+                                                    {% if ticket.statut == 'en cours' %}
+                                                        <form action="{{ path('technicien_update_status', {'id': ticket.id}) }}" method="post" class="d-inline me-2">
+                                                            <input type="hidden" name="status" value="résolu">
+                                                            <button type="submit" class="btn btn-success btn-sm">Marquer comme résolu</button>
+                                                        </form>
+
+                                                        <button 
+                                                            type="button" 
+                                                            class="btn btn-info btn-sm" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#solutionModal{{ ticket.id }}">
+                                                            Ajouter une solution
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+
+                                                <!-- Modal pour clôturer le ticket -->
+                                                <div class="modal fade" id="closeTicketModal{{ ticket.id }}" tabindex="-1">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <form action="{{ path('technicien_close_ticket', {'id': ticket.id}) }}" method="post">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title">Clôturer le ticket</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <div class="form-group">
+                                                                        <label for="solution{{ ticket.id }}">Solution apportée</label>
+                                                                        <textarea id="solution{{ ticket.id }}" name="solution" class="form-control" required></textarea>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                    <button type="submit" class="btn btn-primary">Clôturer</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Modal pour ajouter une solution -->
+                                                <div class="modal fade" id="solutionModal{{ ticket.id }}" tabindex="-1">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <form action="{{ path('technicien_add_solution', {'id': ticket.id}) }}" method="post">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title">Ajouter une solution</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <div class="form-group">
+                                                                        <label for="solution{{ ticket.id }}">Solution proposée</label>
+                                                                        <textarea id="solution{{ ticket.id }}" name="solution" class="form-control" required></textarea>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                    <button type="submit" class="btn btn-primary">Valider la solution</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

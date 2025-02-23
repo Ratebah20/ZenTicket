@@ -1,0 +1,105 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ rapport.titre }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_rapport_index') }}">Rapports</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ rapport.titre }}</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">{{ rapport.titre }}</h1>
+            {% if is_granted('ROLE_ADMIN') or app.user == rapport.auteur %}
+                <div class="btn-group">
+                    <a href="{{ path('app_rapport_edit', {'id': rapport.id}) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    <form method="post" action="{{ path('app_rapport_delete', {'id': rapport.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce rapport ?');" style="display: inline-block;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ rapport.id) }}">
+                        <button class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <p><strong>Type :</strong> 
+                        {% if rapport.type == 'intervention' %}
+                            <span class="badge bg-primary">Intervention</span>
+                        {% else %}
+                            <span class="badge bg-success">Statistique</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Service :</strong> <span class="badge bg-secondary">{{ rapport.service }}</span></p>
+                    <p><strong>Auteur :</strong> {{ rapport.auteur.nom }}</p>
+                    <p><strong>Date de création :</strong> {{ rapport.dateCreation|date('d/m/Y H:i') }}</p>
+                </div>
+                {% if rapport.type == 'intervention' %}
+                    <div class="col-md-6">
+                        <p><strong>Ticket principal :</strong> 
+                            {% if rapport.ticketPrincipal %}
+                                <a href="{{ path('app_ticket_show', {'id': rapport.ticketPrincipal.id}) }}">
+                                    {{ rapport.ticketPrincipal.titre }}
+                                </a>
+                            {% else %}
+                                Aucun
+                            {% endif %}
+                        </p>
+                        <p><strong>Temps passé :</strong> {{ rapport.tempsPasse }} minutes</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <h4>Contenu</h4>
+                <div class="card">
+                    <div class="card-body">
+                        {{ rapport.contenu|nl2br }}
+                    </div>
+                </div>
+            </div>
+
+            {% if rapport.type == 'intervention' %}
+                <div class="mb-4">
+                    <h4>Recommandations</h4>
+                    <div class="card">
+                        <div class="card-body">
+                            {{ rapport.recommandations|nl2br }}
+                        </div>
+                    </div>
+                </div>
+
+                {% if rapport.tickets|length > 0 %}
+                    <div class="mb-4">
+                        <h4>Tickets associés</h4>
+                        <div class="list-group">
+                            {% for ticket in rapport.tickets %}
+                                <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="list-group-item list-group-item-action">
+                                    {{ ticket.titre }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="mb-4">
+                    <h4>Statistiques</h4>
+                    <div class="card">
+                        <div class="card-body">
+                            {{ rapport.statistiques|json_encode(constant('JSON_PRETTY_PRINT'))|nl2br }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

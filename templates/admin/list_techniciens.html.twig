@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des Techniciens{% endblock %}
+
+{% block body %}
+    <h1>Liste des Techniciens</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for technicien in techniciens %}
+                <tr>
+                    <td>{{ technicien.nom }}</td>
+                    <td>{{ technicien.email }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

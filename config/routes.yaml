@@ -3,3 +3,5 @@ controllers:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
+# Supprimez toute référence à api_platform si elle existe
+

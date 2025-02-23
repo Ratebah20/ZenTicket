@@ -1,11 +1,14 @@
 framework:
     asset_mapper:
-        # The paths to make available to the asset mapper.
         paths:
             - assets/
+        excluded_patterns:
+            - '*/vendor/*'
+            - '*/node_modules/*'
         missing_import_mode: strict
 
 when@prod:
     framework:
         asset_mapper:
+            enabled: true
             missing_import_mode: warn

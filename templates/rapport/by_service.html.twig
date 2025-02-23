@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rapports du service {{ service }}{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('app_rapport_index') }}">Rapports</a></li>
+            <li class="breadcrumb-item active">Service : {{ service }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Rapports du service {{ service }}</h1>
+    </div>
+
+    {% if rapports is empty %}
+        <div class="alert alert-info">
+            Aucun rapport trouvé pour ce service.
+        </div>
+    {% else %}
+        <div class="list-group">
+            {% for rapport in rapports %}
+                <a href="{{ path('app_rapport_show', {'id': rapport.id}) }}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ rapport.titre }}</h5>
+                        <small class="text-muted">{{ rapport.dateCreation|date('d/m/Y H:i') }}</small>
+                    </div>
+                    <p class="mb-1">
+                        {% if rapport.type == 'intervention' %}
+                            <span class="badge bg-primary">Intervention</span>
+                        {% else %}
+                            <span class="badge bg-success">Statistique</span>
+                        {% endif %}
+                    </p>
+                    <small class="text-muted">Par {{ rapport.auteur.nom }}</small>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

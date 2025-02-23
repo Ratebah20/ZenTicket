@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier le ticket{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <h1>Modifier le ticket</h1>
+
+        {{ form_start(form) }}
+            <div class="mb-3">
+                {{ form_row(form.titre, {'attr': {'class': 'form-control'}}) }}
+            </div>
+            <div class="mb-3">
+                {{ form_row(form.categorie, {'attr': {'class': 'form-select'}}) }}
+            </div>
+            <div class="mb-3">
+                {{ form_row(form.description, {'attr': {'class': 'form-control'}}) }}
+            </div>
+            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+        {{ form_end(form) }}
+
+        <a href="{{ path('app_profile_tickets') }}" class="btn btn-secondary mt-3">Retour à la liste des tickets</a>
+    </div>
+{% endblock %}
