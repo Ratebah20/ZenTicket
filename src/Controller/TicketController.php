@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Ticket;
+use App\Entity\Chatbox;
 use App\Entity\Utilisateur;
 use App\Entity\Technicien;
 use App\Entity\Commentaire;
@@ -15,13 +16,15 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use App\Service\NotificationService;
 
-#[Route("/ticket")]
+#[Route('/ticket')]
 class TicketController extends AbstractController
 {
     #[Route("/new", name: "app_ticket_new", methods: ["GET", "POST"])]
+    #[IsGranted('ROLE_USER')]
     public function new(Request $request, EntityManagerInterface $entityManager, SluggerInterface $slugger, NotificationService $notificationService, LoggerInterface $logger): Response
     {
         // Vérifier si l'utilisateur est connecté
@@ -32,6 +35,9 @@ class TicketController extends AbstractController
 
         $ticket = new Ticket();
         $ticket->setUtilisateur($this->getUser());  // Définir l'utilisateur dès la création
+        $ticket->setStatut(Ticket::STATUT_NOUVEAU);
+        $ticket->setDateCreation(new \DateTime());
+
         $form = $this->createForm(TicketType::class, $ticket);
         
         try {
@@ -47,9 +53,10 @@ class TicketController extends AbstractController
 
             if ($form->isSubmitted()) {
                 if ($form->isValid()) {
-                    // Définir le statut initial et la date de création
-                    $ticket->setStatut(Ticket::STATUT_NOUVEAU);
-                    $ticket->setDateCreation(new \DateTime());
+                    // Créer une nouvelle chatbox pour le ticket
+                    $chatbox = new Chatbox();
+                    $chatbox->setTicket($ticket);
+                    $ticket->setChatbox($chatbox);
                     
                     // Gérer le commentaire initial s'il existe
                     $commentaireInitial = $form->get('commentaireInitial')->getData();
@@ -63,6 +70,7 @@ class TicketController extends AbstractController
                     }
                     
                     // Sauvegarder le ticket
+                    $entityManager->persist($chatbox);
                     $entityManager->persist($ticket);
                     $entityManager->flush();
 
@@ -83,7 +91,7 @@ class TicketController extends AbstractController
                     }
 
                     $this->addFlash('success', 'Le ticket a été créé avec succès.');
-                    return $this->redirectToRoute('app_ticket_show', ['id' => $ticket->getId()]);
+                    return $this->redirectToRoute('chat_view', ['id' => $chatbox->getId()]);
                 } else {
                     $logger->warning('Formulaire invalide', [
                         'errors' => $this->getFormErrors($form)
@@ -120,10 +128,41 @@ class TicketController extends AbstractController
     }
 
     #[Route("/", name: "app_ticket_index", methods: ["GET"])]
+    #[IsGranted('ROLE_USER')]
     public function index(TicketRepository $ticketRepository): Response
     {
-        return $this->render('ticket/tickets.html.twig', [
-            'tickets' => $ticketRepository->findAll(),
+        $user = $this->getUser();
+        
+        if ($this->isGranted('ROLE_TECHNICIEN')) {
+            $tickets_ouverts = $ticketRepository->findOpenTickets();
+            $tickets_fermes = $ticketRepository->findClosedTickets();
+        } else {
+            $tickets_ouverts = $ticketRepository->findOpenTicketsByUser($user);
+            $tickets_fermes = $ticketRepository->findClosedTicketsByUser($user);
+        }
+
+        return $this->render('ticket/index.html.twig', [
+            'tickets_ouverts' => $tickets_ouverts,
+            'tickets_fermes' => $tickets_fermes,
+        ]);
+    }
+
+    #[Route("/{id}/edit", name: "app_ticket_edit", methods: ["GET", "POST"])]
+    #[IsGranted('ROLE_TECHNICIEN')]
+    public function edit(Request $request, Ticket $ticket, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(TicketType::class, $ticket);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->flush();
+
+            return $this->redirectToRoute('app_ticket_index');
+        }
+
+        return $this->render('ticket/edit.html.twig', [
+            'ticket' => $ticket,
+            'form' => $form->createView(),
         ]);
     }
 
@@ -142,27 +181,7 @@ class TicketController extends AbstractController
         ]);
     }
 
-    #[Route("/{id}/edit", name: "app_ticket_edit", methods: ["GET", "POST"])]
-    public function edit(Request $request, Ticket $ticket, EntityManagerInterface $entityManager): Response
-    {
-        $form = $this->createForm(TicketType::class, $ticket);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-
-            $this->addFlash('success', 'Le ticket a été modifié avec succès.');
-
-            return $this->redirectToRoute('app_ticket_show', ['id' => $ticket->getId()]);
-        }
-
-        return $this->render('ticket/edit.html.twig', [
-            'ticket' => $ticket,
-            'form' => $form->createView(),
-        ]);
-    }
-
-    #[Route("/{id}", name: "app_ticket_delete", methods: ["POST"])]
+    #[Route("/{id}/delete", name: "app_ticket_delete", methods: ["POST"])]
     public function delete(Request $request, Ticket $ticket, EntityManagerInterface $entityManager): Response
     {
         if ($this->isCsrfTokenValid('delete'.$ticket->getId(), $request->request->get('_token'))) {

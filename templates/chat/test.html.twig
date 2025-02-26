@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Test Chat{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <h2>Test de Chat en temps réel</h2>
+        <div id="messages" class="p-3 border rounded mb-3">
+            Waiting for messages...
+        </div>
+        <div id="error" class="alert alert-danger d-none">
+        </div>
+    </div>
+
+    <script>
+        const url = new URL('{{ mercureUrl }}');
+        url.searchParams.append('topic', 'chat');
+
+        const eventSource = new EventSource(url.toString(), {
+            withCredentials: true,
+            headers: {
+                'Authorization': 'Bearer {{ subscriberToken }}'
+            }
+        });
+        
+        eventSource.onmessage = event => {
+            console.log('Message received:', event.data);
+            try {
+                const data = JSON.parse(event.data);
+                const messagesElement = document.getElementById('messages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'mb-2';
+                messageDiv.textContent = `${data.timestamp}: ${data.message}`;
+                messagesElement.appendChild(messageDiv);
+            } catch (error) {
+                console.error('Error parsing message:', error);
+                showError('Error parsing message: ' + error.message);
+            }
+        };
+
+        eventSource.onerror = (event) => {
+            console.error('EventSource error:', event);
+            showError('Connection error. Please check the console for details.');
+        };
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('d-none');
+        }
+    </script>
+{% endblock %}

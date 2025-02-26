@@ -1,0 +1,115 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Tickets{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <h1>Mes Tickets</h1>
+
+        <h2>Tickets en cours</h2>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Titre</th>
+                        <th>Description</th>
+                        <th>Priorité</th>
+                        <th>Statut</th>
+                        <th>Date de création</th>
+                        <th>Technicien assigné</th>
+                        <th>Commentaires</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for ticket in tickets_ouverts %}
+                    <tr>
+                        <td>{{ ticket.titre }}</td>
+                        <td>{{ ticket.description }}</td>
+                        <td>
+                            <span class="badge {% if ticket.priorite == 'URGENT' %}bg-danger{% elseif ticket.priorite == 'NORMALE' %}bg-primary{% else %}bg-success{% endif %}">
+                                {{ ticket.priorite }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if ticket.statut == 'NOUVEAU' %}bg-info{% elseif ticket.statut == 'EN_COURS' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ ticket.statut }}
+                            </span>
+                        </td>
+                        <td>{{ ticket.dateCreation|date('d/m/Y H:i') }}</td>
+                        <td>{{ ticket.technicien ? ticket.technicien.nom : 'Non assigné' }}</td>
+                        <td>
+                            {% if ticket.commentaires|length > 0 %}
+                                <span class="badge bg-secondary">{{ ticket.commentaires|length }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ path('chat_view', {'id': ticket.chatbox.id}) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-comments"></i> Chat
+                                </a>
+                                {% if is_granted('ROLE_TECHNICIEN') %}
+                                    <a href="{{ path('ticket_edit', {'id': ticket.id}) }}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center">Aucun ticket en cours</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h2 class="mt-4">Tickets clôturés</h2>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Titre</th>
+                        <th>Description</th>
+                        <th>Date de création</th>
+                        <th>Date de clôture</th>
+                        <th>Résolu par</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for ticket in tickets_fermes %}
+                    <tr>
+                        <td>{{ ticket.titre }}</td>
+                        <td>{{ ticket.description }}</td>
+                        <td>{{ ticket.dateCreation|date('d/m/Y H:i') }}</td>
+                        <td>{{ ticket.dateCloture|date('d/m/Y H:i') }}</td>
+                        <td>{{ ticket.technicien ? ticket.technicien.nom : 'Auto-résolu' }}</td>
+                        <td>
+                            <a href="{{ path('chat_view', {'id': ticket.chatbox.id}) }}" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-history"></i> Historique
+                            </a>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">Aucun ticket clôturé</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Activer les tooltips Bootstrap
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    </script>
+{% endblock %}

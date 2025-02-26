@@ -6,6 +6,7 @@ use App\Repository\IARepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\DBAL\Types\Types;
 
 /**
  * Entité représentant une Intelligence Artificielle
@@ -34,6 +35,36 @@ class IA
      */
     #[ORM\Column(length: 255)]
     private ?string $nom = null;
+
+    /**
+     * Clé API OpenAI
+     */
+    #[ORM\Column(length: 255)]
+    private ?string $apiKey = null;
+
+    /**
+     * Modèle OpenAI à utiliser
+     */
+    #[ORM\Column(length: 50)]
+    private ?string $model = 'gpt-3.5-turbo';
+
+    /**
+     * Température pour la génération
+     */
+    #[ORM\Column(type: Types::FLOAT)]
+    private float $temperature = 0.7;
+
+    /**
+     * Contexte de conversation par défaut
+     */
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $defaultContext = null;
+
+    /**
+     * Paramètres additionnels en JSON
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private array $additionalParams = [];
 
     /**
      * Initialise une nouvelle instance d'IA
@@ -102,12 +133,15 @@ class IA
      */
     public function reponse(string $message): string
     {
-        $apiKey = 'votre_clé_openai_ici';
-        $url = 'https://api.openai.com/v1/engines/davinci-codex/completions';
+        $apiKey = $this->apiKey;
+        $url = 'https://api.openai.com/v1/engines/' . $this->model . '/completions';
 
         $data = [
             'prompt' => $message,
             'max_tokens' => 150,
+            'temperature' => $this->temperature,
+            'context' => $this->defaultContext,
+            'additional_params' => $this->additionalParams,
         ];
 
         $options = [
@@ -147,6 +181,61 @@ class IA
     {
         $this->nom = $nom;
 
+        return $this;
+    }
+
+    public function getApiKey(): ?string
+    {
+        return $this->apiKey;
+    }
+
+    public function setApiKey(string $apiKey): static
+    {
+        $this->apiKey = $apiKey;
+        return $this;
+    }
+
+    public function getModel(): ?string
+    {
+        return $this->model;
+    }
+
+    public function setModel(string $model): static
+    {
+        $this->model = $model;
+        return $this;
+    }
+
+    public function getTemperature(): float
+    {
+        return $this->temperature;
+    }
+
+    public function setTemperature(float $temperature): static
+    {
+        $this->temperature = $temperature;
+        return $this;
+    }
+
+    public function getDefaultContext(): ?string
+    {
+        return $this->defaultContext;
+    }
+
+    public function setDefaultContext(?string $defaultContext): static
+    {
+        $this->defaultContext = $defaultContext;
+        return $this;
+    }
+
+    public function getAdditionalParams(): array
+    {
+        return $this->additionalParams;
+    }
+
+    public function setAdditionalParams(?array $additionalParams): static
+    {
+        $this->additionalParams = $additionalParams ?? [];
         return $this;
     }
 }

@@ -1,15 +1,25 @@
 monolog:
-    channels:
-        - deprecation # Deprecations are logged in the dedicated "deprecation" channel when it exists
+    channels: ['app', 'deprecation'] # Deprecations are logged in the dedicated "deprecation" channel when it exists
 
 when@dev:
     monolog:
         handlers:
             main:
-                type: stream
+                type: rotating_file
                 path: "%kernel.logs_dir%/%kernel.environment%.log"
                 level: debug
-                channels: ["!event"]
+                channels: ["!event", "!doctrine"]
+                max_files: 10
+            app:
+                type: rotating_file
+                path: "%kernel.logs_dir%/app.log"
+                level: debug
+                channels: ["app"]
+                max_files: 10
+            console:
+                type: console
+                process_psr_3_messages: false
+                channels: ["!event", "!doctrine", "!console"]
             # uncomment to get logging in your browser
             # you may have to allow bigger header sizes in your Web server configuration
             #firephp:
@@ -18,10 +28,6 @@ when@dev:
             #chromephp:
             #    type: chromephp
             #    level: info
-            console:
-                type: console
-                process_psr_3_messages: false
-                channels: ["!event", "!doctrine", "!console"]
 
 when@test:
     monolog:

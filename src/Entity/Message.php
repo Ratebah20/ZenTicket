@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\MessageType;
 use App\Repository\MessageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -33,10 +34,22 @@ class Message
     private ?\DateTimeInterface $timestamp = null;
 
     /**
-     * Statut du message
+     * Type de message (texte, IA, système)
+     */
+    #[ORM\Column(type: 'string', length: 20, enumType: MessageType::class)]
+    private ?MessageType $messageType = MessageType::USER;
+
+    /**
+     * Réactions/émojis sur le message
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private array $reactions = [];
+
+    /**
+     * Statut de lecture du message
      */
     #[ORM\Column]
-    private ?bool $statutMessage = null;
+    private bool $isRead = false;
 
     /**
      * Chatbox dans laquelle le message est envoyé
@@ -99,22 +112,81 @@ class Message
     }
 
     /**
-     * Récupère le statut du message
+     * Récupère le type de message
      */
-    public function isStatutMessage(): ?bool
+    public function getMessageType(): ?MessageType
     {
-        return $this->statutMessage;
+        return $this->messageType;
     }
 
     /**
-     * Définit le statut du message
-     * 
-     * @param bool $statutMessage Le nouveau statut du message
+     * Définit le type de message
      */
-    public function setStatutMessage(bool $statutMessage): static
+    public function setMessageType(MessageType $messageType): static
     {
-        $this->statutMessage = $statutMessage;
+        $this->messageType = $messageType;
+        return $this;
+    }
 
+    /**
+     * Récupère les réactions du message
+     */
+    public function getReactions(): array
+    {
+        return $this->reactions;
+    }
+
+    /**
+     * Définit les réactions du message
+     */
+    public function setReactions(array $reactions): static
+    {
+        $this->reactions = $reactions;
+        return $this;
+    }
+
+    /**
+     * Ajoute une réaction au message
+     */
+    public function addReaction(string $emoji, int $userId): static
+    {
+        if (!isset($this->reactions[$emoji])) {
+            $this->reactions[$emoji] = [];
+        }
+        if (!in_array($userId, $this->reactions[$emoji])) {
+            $this->reactions[$emoji][] = $userId;
+        }
+        return $this;
+    }
+
+    /**
+     * Retire une réaction du message
+     */
+    public function removeReaction(string $emoji, int $userId): static
+    {
+        if (isset($this->reactions[$emoji])) {
+            $this->reactions[$emoji] = array_diff($this->reactions[$emoji], [$userId]);
+            if (empty($this->reactions[$emoji])) {
+                unset($this->reactions[$emoji]);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * Vérifie si le message est lu
+     */
+    public function isRead(): bool
+    {
+        return $this->isRead;
+    }
+
+    /**
+     * Définit le statut de lecture du message
+     */
+    public function setIsRead(bool $isRead): static
+    {
+        $this->isRead = $isRead;
         return $this;
     }
 

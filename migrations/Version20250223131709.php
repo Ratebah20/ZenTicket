@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250222233205 extends AbstractMigration
+final class Version20250223131709 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -25,17 +25,17 @@ final class Version20250222233205 extends AbstractMigration
         $this->addSql('CREATE TABLE chatbox (id INT AUTO_INCREMENT NOT NULL, ia_id INT DEFAULT NULL, INDEX IDX_7472FC2F489A6E65 (ia_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE commentaire (id INT AUTO_INCREMENT NOT NULL, ticket_id INT NOT NULL, auteur_id INT NOT NULL, contenu LONGTEXT NOT NULL, date_creation DATETIME NOT NULL, piece_jointe VARCHAR(255) DEFAULT NULL, INDEX IDX_67F068BC700047D2 (ticket_id), INDEX IDX_67F068BC60BB6FE6 (auteur_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE equipement (id INT AUTO_INCREMENT NOT NULL, s_nmp_id INT DEFAULT NULL, nom VARCHAR(50) NOT NULL, INDEX IDX_B8B4C6F33303B12C (s_nmp_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
-        $this->addSql('CREATE TABLE ia (id INT AUTO_INCREMENT NOT NULL, nom VARCHAR(255) NOT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $this->addSql('CREATE TABLE ia (id INT AUTO_INCREMENT NOT NULL, nom VARCHAR(255) NOT NULL, api_key VARCHAR(255) NOT NULL, model VARCHAR(50) NOT NULL, temperature DOUBLE PRECISION NOT NULL, default_context LONGTEXT DEFAULT NULL, additional_params JSON DEFAULT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE mail (id INT AUTO_INCREMENT NOT NULL, utilisateur_id INT DEFAULT NULL, destinataire VARCHAR(255) NOT NULL, message LONGTEXT NOT NULL, timestamp DATETIME NOT NULL, INDEX IDX_5126AC48FB88E14F (utilisateur_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
-        $this->addSql('CREATE TABLE message (id INT AUTO_INCREMENT NOT NULL, chatbox_id INT DEFAULT NULL, message VARCHAR(255) NOT NULL, timestamp DATETIME NOT NULL, statut_message TINYINT(1) NOT NULL, sender_id INT NOT NULL, INDEX IDX_B6BD307F53527A38 (chatbox_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $this->addSql('CREATE TABLE message (id INT AUTO_INCREMENT NOT NULL, chatbox_id INT DEFAULT NULL, message VARCHAR(255) NOT NULL, timestamp DATETIME NOT NULL, message_type VARCHAR(20) NOT NULL, reactions JSON DEFAULT NULL, is_read TINYINT(1) NOT NULL, sender_id INT NOT NULL, INDEX IDX_B6BD307F53527A38 (chatbox_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE notification (id INT AUTO_INCREMENT NOT NULL, utilisateur_id INT NOT NULL, ticket_id INT NOT NULL, titre VARCHAR(255) NOT NULL, message LONGTEXT NOT NULL, type VARCHAR(50) NOT NULL, lu TINYINT(1) NOT NULL, date_creation DATETIME NOT NULL, INDEX IDX_BF5476CAFB88E14F (utilisateur_id), INDEX IDX_BF5476CA700047D2 (ticket_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
-        $this->addSql('CREATE TABLE personne (id INT AUTO_INCREMENT NOT NULL, nom VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL, password VARCHAR(255) NOT NULL, roles JSON NOT NULL, type VARCHAR(255) NOT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $this->addSql('CREATE TABLE personne (id INT AUTO_INCREMENT NOT NULL, nom VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL, password VARCHAR(255) NOT NULL, roles JSON NOT NULL, type VARCHAR(255) NOT NULL, UNIQUE INDEX UNIQ_FCEC9EFE7927C74 (email), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE rapport (id INT AUTO_INCREMENT NOT NULL, ticket_principal_id INT DEFAULT NULL, auteur_id INT NOT NULL, titre VARCHAR(255) NOT NULL, contenu LONGTEXT NOT NULL, date_creation DATETIME NOT NULL, type VARCHAR(50) NOT NULL, periode VARCHAR(50) DEFAULT NULL, service VARCHAR(50) NOT NULL, statistiques JSON DEFAULT NULL, temps_passe INT DEFAULT NULL, recommandations LONGTEXT DEFAULT NULL, INDEX IDX_BE34A09C879E8C45 (ticket_principal_id), INDEX IDX_BE34A09C60BB6FE6 (auteur_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE rapport_ticket (rapport_id INT NOT NULL, ticket_id INT NOT NULL, INDEX IDX_F6EB60691DFBCC46 (rapport_id), INDEX IDX_F6EB6069700047D2 (ticket_id), PRIMARY KEY(rapport_id, ticket_id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE snmp (id INT AUTO_INCREMENT NOT NULL, nom VARCHAR(50) NOT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
-        $this->addSql('CREATE TABLE technicien (id INT NOT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $this->addSql('CREATE TABLE technicien (id INT NOT NULL, specialite VARCHAR(255) DEFAULT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE ticket (id INT AUTO_INCREMENT NOT NULL, utilisateur_id INT NOT NULL, technicien_id INT DEFAULT NULL, categorie_id INT NOT NULL, titre VARCHAR(255) NOT NULL, description LONGTEXT NOT NULL, statut VARCHAR(50) NOT NULL, priorite VARCHAR(50) NOT NULL, date_creation DATETIME NOT NULL, date_resolution DATETIME DEFAULT NULL, date_cloture DATETIME DEFAULT NULL, solution LONGTEXT DEFAULT NULL, solution_validee TINYINT(1) NOT NULL, INDEX IDX_97A0ADA3FB88E14F (utilisateur_id), INDEX IDX_97A0ADA313457256 (technicien_id), INDEX IDX_97A0ADA3BCF5E72D (categorie_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
-        $this->addSql('CREATE TABLE utilisateur (id INT AUTO_INCREMENT NOT NULL, email VARCHAR(180) NOT NULL, roles JSON NOT NULL, password VARCHAR(255) NOT NULL, nom VARCHAR(255) NOT NULL, UNIQUE INDEX UNIQ_1D1C63B3E7927C74 (email), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        $this->addSql('CREATE TABLE utilisateur (id INT NOT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE messenger_messages (id BIGINT AUTO_INCREMENT NOT NULL, body LONGTEXT NOT NULL, headers LONGTEXT NOT NULL, queue_name VARCHAR(190) NOT NULL, created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', available_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', delivered_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\', INDEX IDX_75EA56E0FB7336F0 (queue_name), INDEX IDX_75EA56E0E3BD61CE (available_at), INDEX IDX_75EA56E016BA31DB (delivered_at), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('ALTER TABLE administrateur ADD CONSTRAINT FK_32EB52E81DFBCC46 FOREIGN KEY (rapport_id) REFERENCES rapport (id)');
         $this->addSql('ALTER TABLE administrateur ADD CONSTRAINT FK_32EB52E8BF396750 FOREIGN KEY (id) REFERENCES personne (id) ON DELETE CASCADE');
@@ -56,6 +56,7 @@ final class Version20250222233205 extends AbstractMigration
         $this->addSql('ALTER TABLE ticket ADD CONSTRAINT FK_97A0ADA3FB88E14F FOREIGN KEY (utilisateur_id) REFERENCES utilisateur (id)');
         $this->addSql('ALTER TABLE ticket ADD CONSTRAINT FK_97A0ADA313457256 FOREIGN KEY (technicien_id) REFERENCES technicien (id)');
         $this->addSql('ALTER TABLE ticket ADD CONSTRAINT FK_97A0ADA3BCF5E72D FOREIGN KEY (categorie_id) REFERENCES categorie (id)');
+        $this->addSql('ALTER TABLE utilisateur ADD CONSTRAINT FK_1D1C63B3BF396750 FOREIGN KEY (id) REFERENCES personne (id) ON DELETE CASCADE');
     }
 
     public function down(Schema $schema): void
@@ -80,6 +81,7 @@ final class Version20250222233205 extends AbstractMigration
         $this->addSql('ALTER TABLE ticket DROP FOREIGN KEY FK_97A0ADA3FB88E14F');
         $this->addSql('ALTER TABLE ticket DROP FOREIGN KEY FK_97A0ADA313457256');
         $this->addSql('ALTER TABLE ticket DROP FOREIGN KEY FK_97A0ADA3BCF5E72D');
+        $this->addSql('ALTER TABLE utilisateur DROP FOREIGN KEY FK_1D1C63B3BF396750');
         $this->addSql('DROP TABLE administrateur');
         $this->addSql('DROP TABLE categorie');
         $this->addSql('DROP TABLE chatbox');

@@ -100,6 +100,10 @@ class Ticket
     #[Groups(['ticket:read', 'ticket:write'])]
     private ?Categorie $categorie = null;
 
+    #[ORM\OneToOne(inversedBy: 'ticket', cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Chatbox $chatbox = null;
+
     public function __construct()
     {
         $this->dateCreation = new \DateTime();
@@ -273,6 +277,18 @@ class Ticket
     public function setCategorie(?Categorie $categorie): static
     {
         $this->categorie = $categorie;
+        return $this;
+    }
+
+    public function getChatbox(): ?Chatbox
+    {
+        return $this->chatbox;
+    }
+
+    public function setChatbox(?Chatbox $chatbox): static
+    {
+        $this->chatbox = $chatbox;
+
         return $this;
     }
 
