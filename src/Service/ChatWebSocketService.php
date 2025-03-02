@@ -4,78 +4,92 @@ namespace App\Service;
 
 use App\Entity\Message;
 use App\Entity\Chatbox;
+use App\Entity\Personne;
 use App\Enum\MessageType;
 use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 use Symfony\Component\Serializer\SerializerInterface;
+use Psr\Log\LoggerInterface;
 
 class ChatWebSocketService
 {
     private HubInterface $hub;
     private SerializerInterface $serializer;
     private string $mercurePublicUrl;
+    private LoggerInterface $logger;
 
     public function __construct(
         HubInterface $hub,
         SerializerInterface $serializer,
-        string $mercurePublicUrl
+        string $mercurePublicUrl,
+        LoggerInterface $logger
     ) {
         $this->hub = $hub;
         $this->serializer = $serializer;
         $this->mercurePublicUrl = $mercurePublicUrl;
+        $this->logger = $logger;
     }
 
     private function getMercureHubUrl(): string
     {
-        $url = $_ENV['MERCURE_PUBLIC_URL'] ?? 'http://localhost:3000/.well-known/mercure';
-        error_log("URL du hub Mercure : " . $url);
+        $url = $this->mercurePublicUrl ?? 'http://localhost:3000/.well-known/mercure';
+        $this->logger->info("URL du hub Mercure : " . $url);
         return $url;
     }
 
-    public function publishNewMessage(Message $message): void
+    public function publish(Message $message): bool
     {
-        error_log("=== Début de la publication du message ===");
-        error_log("Message ID: " . $message->getId());
-        error_log("Topic: /chat/" . $message->getChatbox()->getId());
-
         try {
+            $chatboxId = $message->getChatbox()->getId();
+            $topic = "/chat/{$chatboxId}";
+            
             $data = [
                 'id' => $message->getId(),
                 'content' => $message->getMessage(),
                 'messageType' => $message->getMessageType()->value,
                 'senderId' => $message->getSenderId(),
-                'timestamp' => $message->getTimestamp()->format('c'),
-                'type' => 'message',
-                'reactions' => [],
-                'isRead' => false
+                'timestamp' => $message->getTimestamp()->format('Y-m-d\TH:i:s.v\Z'),
+                'type' => 'message' // Ajouter un type pour différencier des autres événements
             ];
-
-            error_log("Données à publier : " . json_encode($data));
-
+            
             $update = new Update(
-                [sprintf('/chat/%d', $message->getChatbox()->getId())],
+                $topic,
                 json_encode($data),
-                true
+                true  // Private = true pour forcer l'authentification
             );
-
-            error_log("Topics : " . implode(', ', $update->getTopics()));
-            error_log("Données de l'update : " . $update->getData());
-
-            // Publication du message
-            $result = $this->hub->publish($update);
-            error_log("Résultat de la publication : " . ($result ? "succès" : "échec"));
-
-            // Attendre un court instant pour s'assurer que le message est publié
-            usleep(100000); // 100ms
-
-            error_log("Message publié avec succès");
+            
+            $this->logger->info('Publication WebSocket', [
+                'topic' => $topic,
+                'data' => $data,
+                'private' => true
+            ]);
+            
+            $this->hub->publish($update);
+            
+            $this->logger->info('Message publié avec succès');
+            return true;
         } catch (\Exception $e) {
-            error_log("Erreur lors de la publication : " . $e->getMessage());
-            error_log("Trace : " . $e->getTraceAsString());
-            throw $e;
+            $this->logger->error('Erreur lors de la publication WebSocket', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
         }
+    }
 
-        error_log("=== Fin de la publication du message ===");
+    public function publishNewMessage(Message $message): void
+    {
+        $this->logger->info("=== Début de la publication du message ===", [
+            'messageId' => $message->getId(),
+            'chatboxId' => $message->getChatbox()->getId()
+        ]);
+        
+        // Utiliser la méthode publish
+        $success = $this->publish($message);
+        
+        $this->logger->info("=== Fin de la publication du message ===", [
+            'success' => $success
+        ]);
     }
 
     /**
@@ -99,10 +113,16 @@ class ChatWebSocketService
                 true
             );
 
+            $this->logger->info('Publication des réactions', [
+                'topic' => $topic,
+                'messageId' => $message->getId()
+            ]);
+            
             $this->hub->publish($update);
         } catch (\Exception $e) {
-            error_log("Error publishing reactions: " . $e->getMessage());
-            throw $e;
+            $this->logger->error('Erreur lors de la publication des réactions', [
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
@@ -127,37 +147,51 @@ class ChatWebSocketService
                 true
             );
 
+            $this->logger->info('Publication du statut de lecture', [
+                'topic' => $topic,
+                'messageId' => $message->getId()
+            ]);
+            
             $this->hub->publish($update);
         } catch (\Exception $e) {
-            error_log("Error publishing read status: " . $e->getMessage());
-            throw $e;
+            $this->logger->error('Erreur lors de la publication du statut de lecture', [
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
     /**
-     * Publie un événement de frappe dans le hub Mercure
+     * Publie un événement de frappe (typing)
      */
-    public function publishTypingEvent(Chatbox $chatbox, int $userId, bool $isTyping): void
+    public function publishTypingStatus(Chatbox $chatbox, ?Personne $user, bool $isTyping): void
     {
-        $topic = "/chat/{$chatbox->getId()}";
-        
         try {
+            $chatboxId = $chatbox->getId();
+            $topic = "/chat/{$chatboxId}";
+            
             $data = [
                 'type' => 'typing',
-                'userId' => $userId,
-                'isTyping' => $isTyping
+                'userId' => $user ? $user->getId() : null,
+                'isTyping' => $isTyping,
+                'timestamp' => (new \DateTime())->format('Y-m-d\TH:i:s.v\Z')
             ];
-
+            
             $update = new Update(
                 $topic,
                 json_encode($data),
-                true
+                true  // Private = true pour forcer l'authentification
             );
-
+            
+            $this->logger->info('Publication statut de frappe', [
+                'topic' => $topic,
+                'data' => $data
+            ]);
+            
             $this->hub->publish($update);
         } catch (\Exception $e) {
-            error_log("Error publishing typing event: " . $e->getMessage());
-            throw $e;
+            $this->logger->error('Erreur lors de la publication du statut de frappe', [
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

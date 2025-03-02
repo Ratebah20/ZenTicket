@@ -84,8 +84,6 @@ class Technicien extends Personne implements PasswordAuthenticatedUserInterface,
         }
         
         $ticket->setSolution($solution);
-        $ticket->setStatut(Ticket::STATUT_RESOLU);
-        $ticket->setDateResolution(new \DateTime());
     }
 
     /**

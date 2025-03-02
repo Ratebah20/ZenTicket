@@ -33,6 +33,7 @@
                                         <th>Titre</th>
                                         <th>Catégorie</th>
                                         <th>Description</th>
+                                        <th>Priorité</th>
                                         <th>Statut</th>
                                         <th>Date de création</th>
                                         <th>Actions</th>
@@ -44,6 +45,11 @@
                                             <td>{{ ticket.titre }}</td>
                                             <td>{% if ticket.categorie %}{{ ticket.categorie.nom }}{% else %}Non catégorisé{% endif %}</td>
                                             <td>{{ ticket.description }}</td>
+                                            <td>
+                                                <span class="badge {{ ticket.prioriteClass }}">
+                                                    {{ ticket.priorite }}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <span class="badge bg-{{ ticket.statut == 'nouveau' ? 'primary' : 
                                                     ticket.statut == 'en cours' ? 'warning' : 
@@ -88,6 +94,7 @@
                                         <th>Titre</th>
                                         <th>Catégorie</th>
                                         <th>Description</th>
+                                        <th>Priorité</th>
                                         <th>Statut</th>
                                         <th>Solution</th>
                                         <th>Date de création</th>
@@ -100,6 +107,11 @@
                                             <td>{{ ticket.titre }}</td>
                                             <td>{% if ticket.categorie %}{{ ticket.categorie.nom }}{% else %}Non catégorisé{% endif %}</td>
                                             <td>{{ ticket.description }}</td>
+                                            <td>
+                                                <span class="badge {{ ticket.prioriteClass }}">
+                                                    {{ ticket.priorite }}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <span class="badge bg-{{ ticket.statut == 'nouveau' ? 'primary' : 
                                                     ticket.statut == 'en cours' ? 'warning' : 
@@ -125,63 +137,40 @@
                                                     {% endif %}
 
                                                     {% if ticket.statut == 'en cours' %}
-                                                        <form action="{{ path('technicien_update_status', {'id': ticket.id}) }}" method="post" class="d-inline me-2">
-                                                            <input type="hidden" name="status" value="résolu">
-                                                            <button type="submit" class="btn btn-success btn-sm">Marquer comme résolu</button>
-                                                        </form>
-
                                                         <button 
                                                             type="button" 
-                                                            class="btn btn-info btn-sm" 
+                                                            class="btn btn-success btn-sm" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#solutionModal{{ ticket.id }}">
-                                                            Ajouter une solution
+                                                            Résoudre avec solution
                                                         </button>
                                                     {% endif %}
                                                 </div>
 
-                                                <!-- Modal pour clôturer le ticket -->
-                                                <div class="modal fade" id="closeTicketModal{{ ticket.id }}" tabindex="-1">
-                                                    <div class="modal-dialog">
-                                                        <div class="modal-content">
-                                                            <form action="{{ path('technicien_close_ticket', {'id': ticket.id}) }}" method="post">
-                                                                <div class="modal-header">
-                                                                    <h5 class="modal-title">Clôturer le ticket</h5>
-                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                                </div>
-                                                                <div class="modal-body">
-                                                                    <div class="form-group">
-                                                                        <label for="solution{{ ticket.id }}">Solution apportée</label>
-                                                                        <textarea id="solution{{ ticket.id }}" name="solution" class="form-control" required></textarea>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="modal-footer">
-                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                                                    <button type="submit" class="btn btn-primary">Clôturer</button>
-                                                                </div>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Modal pour ajouter une solution -->
+                                                <!-- Modal pour ajouter une solution et résoudre -->
                                                 <div class="modal fade" id="solutionModal{{ ticket.id }}" tabindex="-1">
                                                     <div class="modal-dialog">
                                                         <div class="modal-content">
                                                             <form action="{{ path('technicien_add_solution', {'id': ticket.id}) }}" method="post">
                                                                 <div class="modal-header">
-                                                                    <h5 class="modal-title">Ajouter une solution</h5>
+                                                                    <h5 class="modal-title">Résoudre le ticket avec solution</h5>
                                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                                 </div>
                                                                 <div class="modal-body">
                                                                     <div class="form-group">
                                                                         <label for="solution{{ ticket.id }}">Solution proposée</label>
-                                                                        <textarea id="solution{{ ticket.id }}" name="solution" class="form-control" required></textarea>
+                                                                        <textarea id="solution{{ ticket.id }}" name="solution" class="form-control" required rows="4"></textarea>
+                                                                    </div>
+                                                                    <div class="form-check mt-3">
+                                                                        <input class="form-check-input" type="checkbox" id="markAsResolved{{ ticket.id }}" name="markAsResolved" value="1" checked>
+                                                                        <label class="form-check-label" for="markAsResolved{{ ticket.id }}">
+                                                                            Marquer comme résolu et notifier l'utilisateur
+                                                                        </label>
                                                                     </div>
                                                                 </div>
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                                                    <button type="submit" class="btn btn-primary">Valider la solution</button>
+                                                                    <button type="submit" class="btn btn-success">Valider la solution</button>
                                                                 </div>
                                                             </form>
                                                         </div>

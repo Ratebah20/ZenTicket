@@ -66,7 +66,7 @@ class TechnicienController extends AbstractController
             $this->addFlash('error', 'Impossible de prendre en charge ce ticket.');
         }
 
-        return $this->redirectToRoute('technicien_dashboard'); // Modifié ici
+        return $this->redirectToRoute('technicien_dashboard');
     }
 
     #[Route('/ticket/{id}/close', name: 'technicien_close_ticket', methods: ['POST'])]
@@ -84,7 +84,7 @@ class TechnicienController extends AbstractController
             $this->addFlash('error', $e->getMessage());
         }
 
-        return $this->redirectToRoute('technicien_dashboard'); // Modifié ici
+        return $this->redirectToRoute('technicien_dashboard');
     }
 
     #[Route('/ticket/{id}/status', name: 'technicien_update_status', methods: ['POST'])]
@@ -142,17 +142,53 @@ class TechnicienController extends AbstractController
     }
 
     #[Route('/ticket/{id}/solution', name: 'technicien_add_solution', methods: ['POST'])]
-    public function addSolution(Request $request, Ticket $ticket, EntityManagerInterface $entityManager): Response
-    {
+    public function addSolution(
+        Request $request, 
+        Ticket $ticket, 
+        EntityManagerInterface $entityManager, 
+        NotificationService $notificationService,
+        LoggerInterface $logger
+    ): Response {
         /** @var Technicien $technicien */
         $technicien = $this->getUser();
         $solution = $request->request->get('solution');
+        $markAsResolved = $request->request->has('markAsResolved');
+        $oldStatus = $ticket->getStatut();
+
+        $logger->info('Début de addSolution', [
+            'ticket_id' => $ticket->getId(),
+            'technicien_id' => $technicien->getId(),
+            'mark_as_resolved' => $markAsResolved
+        ]);
 
         try {
+            // Ajout de la solution
             $technicien->ajouterSolution($ticket, $solution);
+            
+            // Si l'option est cochée, marquer comme résolu
+            if ($markAsResolved) {
+                $technicien->modifierStatut($ticket, Ticket::STATUT_RESOLU);
+                
+                // Notifier l'utilisateur du changement de statut
+                $notificationService->notifyTicketResolved($ticket);
+                $logger->info('Notification envoyée à l\'utilisateur pour la résolution du ticket', [
+                    'ticket_id' => $ticket->getId(),
+                    'user_id' => $ticket->getUtilisateur()->getId()
+                ]);
+            }
+            
             $entityManager->flush();
-            $this->addFlash('success', 'Solution ajoutée avec succès.');
+            
+            if ($markAsResolved) {
+                $this->addFlash('success', 'Solution ajoutée et ticket marqué comme résolu avec succès.');
+            } else {
+                $this->addFlash('success', 'Solution ajoutée avec succès.');
+            }
         } catch (\Exception $e) {
+            $logger->error('Erreur lors de l\'ajout de solution', [
+                'error' => $e->getMessage(),
+                'ticket_id' => $ticket->getId()
+            ]);
             $this->addFlash('error', $e->getMessage());
         }
 

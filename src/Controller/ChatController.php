@@ -23,7 +23,7 @@ class ChatController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ChatWebSocketService $webSocketService,
+        private ChatWebSocketService $chatWebSocketService,
         private ChatAIService $aiService,
         private MercureJwtProvider $jwtProvider
     ) {}
@@ -37,11 +37,13 @@ class ChatController extends AbstractController
         }
 
         $mercureUrl = $_ENV['MERCURE_PUBLIC_URL'] ?? 'http://localhost:3000/.well-known/mercure';
-
+        $subscriberToken = $this->jwtProvider->getSubscriberToken();
+        
+        // Ne plus utiliser de cookie, uniquement passer le token au template
         return $this->render('chat/view.html.twig', [
             'chatbox' => $chatbox,
             'mercureUrl' => $mercureUrl,
-            'subscriberToken' => $this->jwtProvider->getSubscriberToken()
+            'subscriberToken' => $subscriberToken
         ]);
     }
 
@@ -128,7 +130,7 @@ class ChatController extends AbstractController
         // Publier le message via WebSocket
         try {
             error_log("Publication du message utilisateur via WebSocket");
-            $this->webSocketService->publishNewMessage($message);
+            $this->chatWebSocketService->publishNewMessage($message);
             error_log("Message utilisateur publié avec succès");
         } catch (\Exception $e) {
             error_log("Erreur WebSocket: " . $e->getMessage());
@@ -179,7 +181,7 @@ class ChatController extends AbstractController
         
         $this->entityManager->flush();
 
-        $this->webSocketService->publishReactionUpdate($message);
+        $this->chatWebSocketService->publishReactionUpdate($message);
 
         return $this->json(['status' => 'ok']);
     }
@@ -195,42 +197,25 @@ class ChatController extends AbstractController
         $message->setIsRead(true);
         $this->entityManager->flush();
 
-        $this->webSocketService->publishReadStatus($message);
+        $this->chatWebSocketService->publishReadStatus($message);
 
         return $this->json(['status' => 'ok']);
     }
 
     #[Route('/{id}/typing', name: 'chat_typing', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
-    public function setTypingStatus(Chatbox $chatbox, Request $request): JsonResponse
+    public function typing(Request $request, Chatbox $chatbox): JsonResponse
     {
         if (!$this->isGranted('view', $chatbox)) {
-            throw $this->createAccessDeniedException();
+            throw $this->createAccessDeniedException('Vous n\'avez pas accès à cette conversation.');
         }
 
-        if (!$this->isCsrfTokenValid('chat', $request->headers->get('X-CSRF-TOKEN'))) {
-            return $this->json(['error' => 'Invalid CSRF token'], Response::HTTP_FORBIDDEN);
-        }
+        $data = json_decode($request->getContent(), true);
+        $isTyping = $data['isTyping'] ?? false;
 
-        $content = json_decode($request->getContent(), true);
-        $isTyping = $content['typing'] ?? false;
+        // Publier le statut de frappe
+        $this->chatWebSocketService->publishTypingStatus($chatbox, $this->getUser(), $isTyping);
 
-        /** @var Personne $user */
-        $user = $this->getUser();
-        
-        try {
-            $this->webSocketService->publishTypingEvent(
-                $chatbox,
-                $user->getId(),
-                $isTyping
-            );
-
-            return $this->json(['status' => 'ok']);
-        } catch (\Exception $e) {
-            return $this->json(
-                ['error' => 'Erreur lors de la mise à jour du statut de frappe'],
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
-        }
+        return $this->json(['success' => true]);
     }
 }

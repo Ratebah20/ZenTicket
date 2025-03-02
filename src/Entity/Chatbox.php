@@ -39,6 +39,18 @@ class Chatbox
     private ?IA $ia = null;
 
     /**
+     * Date de création de la chatbox
+     */
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $createdAt = null;
+
+    /**
+     * Indique si c'est une chatbox temporaire pour l'assistant IA
+     */
+    #[ORM\Column(type: 'boolean')]
+    private bool $isTemporary = false;
+
+    /**
      * Initialise une nouvelle chatbox avec une collection de messages vide
      */
     public function __construct()
@@ -143,6 +155,46 @@ class Chatbox
     {
         $this->ia = $ia;
 
+        return $this;
+    }
+
+    /**
+     * Récupère la date de création de la chatbox
+     */
+    public function getCreatedAt(): ?\DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    /**
+     * Définit la date de création de la chatbox
+     * 
+     * @param \DateTimeInterface|null $createdAt La date de création
+     */
+    public function setCreatedAt(?\DateTimeInterface $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+        
+        return $this;
+    }
+
+    /**
+     * Vérifie si la chatbox est temporaire (pour l'assistant IA)
+     */
+    public function isTemporary(): bool
+    {
+        return $this->isTemporary;
+    }
+
+    /**
+     * Définit si la chatbox est temporaire (pour l'assistant IA)
+     * 
+     * @param bool $isTemporary Vrai si temporaire, faux sinon
+     */
+    public function setIsTemporary(bool $isTemporary): static
+    {
+        $this->isTemporary = $isTemporary;
+        
         return $this;
     }
 

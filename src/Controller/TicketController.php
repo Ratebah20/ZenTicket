@@ -4,9 +4,11 @@ namespace App\Controller;
 
 use App\Entity\Ticket;
 use App\Entity\Chatbox;
+use App\Entity\Message;
 use App\Entity\Utilisateur;
 use App\Entity\Technicien;
 use App\Entity\Commentaire;
+use App\Enum\MessageType;
 use App\Form\TicketType;
 use App\Form\CommentaireType;
 use App\Repository\TicketRepository;
@@ -33,12 +35,46 @@ class TicketController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
+        // Si l'utilisateur n'a pas d'abord visité l'assistant IA, le rediriger
+        $session = $request->getSession();
+        $aiChatId = $session->get('ai_chat_id');
+        
+        if (!$aiChatId && $request->getMethod() === 'GET') {
+            // Rediriger vers l'assistant IA seulement sur la première visite GET
+            $logger->info('Redirection vers l\'assistant IA avant création de ticket');
+            return $this->redirectToRoute('app_ai_chat');
+        }
+
         $ticket = new Ticket();
         $ticket->setUtilisateur($this->getUser());  // Définir l'utilisateur dès la création
         $ticket->setStatut(Ticket::STATUT_NOUVEAU);
         $ticket->setDateCreation(new \DateTime());
 
         $form = $this->createForm(TicketType::class, $ticket);
+        
+        // Si l'utilisateur vient de l'assistant IA, récupérer les messages pour les ajouter au formulaire
+        if ($aiChatId) {
+            $chatbox = $entityManager->getRepository(Chatbox::class)->find($aiChatId);
+            if ($chatbox) {
+                // Récupérer les messages de l'utilisateur pour le contexte du ticket
+                $messages = $entityManager->getRepository(Message::class)
+                    ->findBy(['chatbox' => $chatbox, 'messageType' => MessageType::USER], ['timestamp' => 'ASC']);
+                
+                if (count($messages) > 0) {
+                    // Construire une description à partir des messages
+                    $description = "Conversation avec l'assistant IA:\n\n";
+                    foreach ($messages as $message) {
+                        $description .= "- " . $message->getMessage() . "\n";
+                    }
+                    
+                    // Pré-remplir le formulaire avec la description
+                    $form->get('description')->setData($description);
+                }
+                
+                // On n'a plus besoin de garder cette référence en session
+                $session->remove('ai_chat_id');
+            }
+        }
         
         try {
             $form->handleRequest($request);

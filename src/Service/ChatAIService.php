@@ -125,13 +125,40 @@ class ChatAIService
             
             if ($aiMessage) {
                 $this->logger->info("Réponse IA générée avec succès: " . $aiMessage->getMessage());
+                
+                // Persister le message dans la base de données
                 $this->entityManager->persist($aiMessage);
                 $this->entityManager->flush();
+                $this->logger->info("Message IA persisté avec ID: " . $aiMessage->getId());
                 
-                // Publier le message via WebSocket
+                // Publier le message via WebSocket avec une priorité élevée
                 $this->logger->info("Publication de la réponse via WebSocket");
-                $this->webSocketService->publishNewMessage($aiMessage);
-                $this->logger->info("Réponse publiée avec succès");
+                try {
+                    // Première tentative de publication
+                    $this->webSocketService->publishNewMessage($aiMessage);
+                    
+                    // Attendre un court instant
+                    usleep(200000); // 200ms
+                    
+                    // Deuxième tentative de publication pour s'assurer que le message est bien reçu
+                    $this->logger->info("Seconde publication pour garantir la réception");
+                    $this->webSocketService->publishNewMessage($aiMessage);
+                    
+                    $this->logger->info("Réponse publiée avec succès");
+                } catch (\Exception $e) {
+                    $this->logger->error("Erreur lors de la publication WebSocket: " . $e->getMessage());
+                    $this->logger->error("Trace: " . $e->getTraceAsString());
+                    
+                    // Tentative de récupération en cas d'échec
+                    try {
+                        $this->logger->info("Tentative de récupération après échec...");
+                        usleep(500000); // 500ms
+                        $this->webSocketService->publishNewMessage($aiMessage);
+                        $this->logger->info("Récupération réussie");
+                    } catch (\Exception $e2) {
+                        $this->logger->error("Échec de la récupération: " . $e2->getMessage());
+                    }
+                }
             } else {
                 $this->logger->warning("Aucune réponse générée par l'IA");
             }

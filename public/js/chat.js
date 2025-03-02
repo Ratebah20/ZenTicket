@@ -19,6 +19,13 @@ class Chat {
         this.messages = new Map();
         this.typingUsers = new Set();
         this.eventSource = null;
+        this.connectionAttempts = 0;
+        this.maxReconnectAttempts = 10;
+        this.baseReconnectDelay = 1000;
+        this.lastMessageId = null;
+        this.processedMessageIds = new Set();
+        this.reconnectButton = $('#reconnect-button');
+
         this.currentPage = 1;
         this.isInitialized = false;
 
@@ -54,45 +61,59 @@ class Chat {
     }
 
     setupEventListeners() {
-        console.log('Setting up event listeners');
+        console.log('Configuration des écouteurs d\'événements');
         
-        // Utiliser une fonction fléchée pour préserver le contexte 'this'
-        this.sendButton.on('click', (e) => {
-            console.log('Send button clicked');
-            e.preventDefault();
+        this.sendButton.on('click', () => {
             this.sendMessage();
         });
-
-        this.messageInput.on('keypress', (e) => {
+        
+        this.messageInput.on('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
-                console.log('Enter key pressed');
                 e.preventDefault();
                 this.sendMessage();
             }
         });
-
-        this.messageInput.on('input', () => this.handleTyping());
-
-        // Ajouter la gestion du clic sur le bouton emoji
-        this.emojiButton.on('click', (e) => {
-            e.preventDefault();
-            this.emojiPicker.toggle();
+        
+        this.messageInput.on('input', () => {
+            this.sendTypingStatus();
         });
-
-        // Fermer le sélecteur d'emoji quand on clique ailleurs
-        $(document).on('click', (e) => {
-            if (!$(e.target).closest('#emojiButton, #emojiPicker').length) {
-                this.emojiPicker.hide();
+        
+        this.reconnectButton.on('click', () => {
+            console.log('Bouton de reconnexion cliqué');
+            this.setupEventSource();
+        });
+        
+        // Ajouter un écouteur pour le bouton de test Mercure
+        $('#test-mercure-button').on('click', () => {
+            console.log('Test de la connexion Mercure');
+            this.testMercureConnection();
+            
+            // Afficher les informations de diagnostic
+            const diagnosticInfo = {
+                readyState: this.eventSource ? this.eventSource.readyState : 'null',
+                readyStateText: this.eventSource ? 
+                    (this.eventSource.readyState === EventSource.CONNECTING ? 'CONNECTING' :
+                     this.eventSource.readyState === EventSource.OPEN ? 'OPEN' :
+                     this.eventSource.readyState === EventSource.CLOSED ? 'CLOSED' : 'UNKNOWN') : 'null',
+                connectionAttempts: this.connectionAttempts,
+                tokenAvailable: !!this.config.subscriberToken,
+                tokenLength: this.config.subscriberToken ? this.config.subscriberToken.length : 0,
+                mercureUrl: this.config.mercureUrl,
+                topic: `/chat/${this.config.id}`,
+                eventSourcePolyfillAvailable: typeof EventSourcePolyfill !== 'undefined'
+            };
+            
+            console.log('Informations de diagnostic:', diagnosticInfo);
+            
+            // Si la connexion est fermée, tenter une reconnexion
+            if (!this.eventSource || this.eventSource.readyState === EventSource.CLOSED) {
+                console.log('Tentative de reconnexion...');
+                this.setupEventSource();
             }
         });
-
-        $(window).on('beforeunload', () => {
-            if (this.eventSource) {
-                this.eventSource.close();
-            }
-        });
-
-        console.log('Event listeners setup completed');
+        
+        // Initialiser le sélecteur d'emoji
+        this.initEmojiPicker();
     }
 
     async sendMessage() {
@@ -118,6 +139,9 @@ class Chat {
             console.error('Token CSRF manquant');
             return;
         }
+        
+        // Vérifier la connexion Mercure avant d'envoyer
+        this.testMercureConnection();
 
         try {
             console.log('Envoi de la requête à:', this.config.routes.send);
@@ -188,6 +212,9 @@ class Chat {
     setupEventSource() {
         console.log('=== Configuration de la connexion Mercure ===');
         console.log('Topic URL:', this.config.mercureUrl);
+        console.log('Subscriber Token:', this.config.subscriberToken ? 'présent' : 'manquant');
+        
+        let reconnectTimeout = null;
         
         const connectEventSource = () => {
             console.log('Tentative de connexion à Mercure...', {
@@ -200,18 +227,38 @@ class Chat {
                 this.eventSource.close();
             }
 
-            // Construire l'URL avec le topic
+            // Construire l'URL avec le topic uniquement
             const url = new URL(this.config.mercureUrl);
             url.searchParams.append('topic', `/chat/${this.config.id}`);
+            
             console.log('URL complète:', url.toString());
 
-            // Configuration de EventSource
-            const eventSourceInit = {
-                withCredentials: false // Désactiver withCredentials pour éviter les problèmes CORS
-            };
-
             try {
-                this.eventSource = new EventSource(url.toString(), eventSourceInit);
+                console.log('Création de l\'objet EventSource...');
+                
+                // Créer une instance de EventSourcePolyfill qui supporte les en-têtes personnalisés
+                const headers = {};
+                
+                // Ajouter le token dans l'en-tête Authorization
+                if (this.config.subscriberToken) {
+                    headers['Authorization'] = `Bearer ${this.config.subscriberToken}`;
+                }
+                
+                // Utiliser un polyfill EventSource qui prend en charge les en-têtes personnalisés
+                // Si EventSourcePolyfill n'est pas disponible, nous utilisons une solution de secours
+                if (typeof EventSourcePolyfill !== 'undefined') {
+                    console.log('Utilisation de EventSourcePolyfill avec en-têtes personnalisés');
+                    this.eventSource = new EventSourcePolyfill(url.toString(), {
+                        headers: headers
+                    });
+                } else {
+                    // Solution de secours: utiliser le cookie pour l'authentification
+                    console.log('EventSourcePolyfill non disponible, utilisation de cookies');
+                    document.cookie = `mercureAuthorization=Bearer ${this.config.subscriberToken}; path=/; SameSite=Lax`;
+                    this.eventSource = new EventSource(url.toString(), { withCredentials: true });
+                }
+                
+                console.log('EventSource créé avec succès, état initial:', this.eventSource.readyState);
 
                 this.eventSource.onopen = (e) => {
                     console.log('Connexion Mercure établie', {
@@ -220,31 +267,62 @@ class Chat {
                         url: url.toString()
                     });
                     this.connectionAttempts = 0;
-
-                    // Envoyer un ping pour tester la connexion
-                    console.log('Envoi d\'un ping de test...');
-                    fetch(url.toString(), {
-                        method: 'HEAD',
-                        credentials: 'omit'
-                    }).then(response => {
-                        console.log('Ping Mercure réussi:', response.status);
-                    }).catch(error => {
-                        console.error('Erreur ping Mercure:', error);
-                    });
+                    
+                    // Effacer tout timeout de reconnexion existant
+                    if (reconnectTimeout) {
+                        clearTimeout(reconnectTimeout);
+                        reconnectTimeout = null;
+                    }
+                    
+                    // Indiquer visuellement que la connexion est établie
+                    console.log('Connexion WebSocket active');
+                    
+                    // Vérifier si des messages sont en attente
+                    console.log('Vérification des messages en attente...');
+                    this.loadMessages();
                 };
 
-                this.eventSource.onerror = (e) => {
-                    console.error('Erreur Mercure:', {
-                        readyState: this.eventSource?.readyState,
-                        error: e,
-                        url: url.toString()
-                    });
+                this.eventSource.onerror = (event) => {
+                    console.error('Erreur EventSource:', event);
+                    
+                    // Afficher plus d'informations sur l'erreur
+                    if (event.target && event.target.readyState) {
+                        console.error('État de la connexion lors de l\'erreur:', 
+                            event.target.readyState === EventSource.CONNECTING ? 'CONNECTING' :
+                            event.target.readyState === EventSource.OPEN ? 'OPEN' :
+                            event.target.readyState === EventSource.CLOSED ? 'CLOSED' : 'UNKNOWN'
+                        );
+                    }
+                    
+                    // Vérifier si l'erreur est liée à CORS
+                    if (event.target && event.target.url) {
+                        console.error('URL qui a causé l\'erreur:', event.target.url);
+                    }
+                    
+                    // Afficher le bouton de reconnexion
+                    this.reconnectButton.show();
                     
                     if (this.eventSource.readyState === EventSource.CLOSED) {
-                        const delay = Math.min(1000 * Math.pow(2, this.connectionAttempts), 30000);
+                        console.log('Connexion fermée, tentative de reconnexion...');
                         this.connectionAttempts++;
-                        console.log(`Nouvelle tentative dans ${delay/1000} secondes...`);
-                        setTimeout(connectEventSource, delay);
+                        
+                        if (this.connectionAttempts < this.maxReconnectAttempts) {
+                            const delay = Math.min(
+                                this.baseReconnectDelay * Math.pow(1.5, this.connectionAttempts),
+                                30000
+                            );
+                            console.log(`Reconnexion dans ${delay}ms (tentative ${this.connectionAttempts}/${this.maxReconnectAttempts})`);
+                            
+                            if (reconnectTimeout) {
+                                clearTimeout(reconnectTimeout);
+                            }
+                            
+                            reconnectTimeout = setTimeout(() => {
+                                connectEventSource();
+                            }, delay);
+                        } else {
+                            console.error(`Nombre maximum de tentatives de reconnexion atteint (${this.maxReconnectAttempts})`);
+                        }
                     }
                 };
 
@@ -260,75 +338,147 @@ class Chat {
                         const data = JSON.parse(e.data);
                         console.log('Message parsé :', data);
                         
-                        // Vérifier si le message n'existe pas déjà
-                        if (!this.messages.has(data.id)) {
-                            console.log('Nouveau message Mercure détecté, traitement...');
-                            this.handleMercureMessage(data);
-                        } else {
-                            console.log('Message déjà existant, ignoré:', data.id);
-                        }
+                        this.handleMercureMessage(data);
                     } catch (error) {
                         console.error('Erreur lors du traitement du message:', error);
                         console.error('Message brut reçu:', e.data);
                     }
                 };
+                
+                // Vérifier l'état de la connexion toutes les 30 secondes
+                setInterval(() => {
+                    if (this.eventSource) {
+                        const state = this.eventSource.readyState;
+                        console.log('État actuel de la connexion EventSource:', 
+                            state === EventSource.CONNECTING ? 'CONNECTING' :
+                            state === EventSource.OPEN ? 'OPEN' :
+                            state === EventSource.CLOSED ? 'CLOSED' : 'UNKNOWN'
+                        );
+                        
+                        // Si la connexion est fermée, afficher le bouton de reconnexion
+                        if (state === EventSource.CLOSED) {
+                            this.reconnectButton.show();
+                        } else if (state === EventSource.OPEN) {
+                            this.reconnectButton.hide();
+                        }
+                    }
+                }, 30000);
+                
+                console.log('EventSource configuré avec succès');
             } catch (error) {
-                console.error('Erreur lors de la configuration de EventSource:', error);
+                console.error('Erreur lors de la création de EventSource:', error);
+                this.reconnectButton.show();
             }
         };
-
-        // Initialiser la connexion
+        
+        // Réinitialiser le compteur de tentatives et démarrer la connexion
         this.connectionAttempts = 0;
         connectEventSource();
         
         // Vérifier périodiquement l'état de la connexion
-        setInterval(() => {
-            if (this.eventSource && this.eventSource.readyState === EventSource.CLOSED) {
-                console.log('Connexion fermée, tentative de reconnexion...');
+        this.connectionCheckInterval = setInterval(() => {
+            if (!this.eventSource || this.eventSource.readyState === EventSource.CLOSED) {
+                console.log('Connexion fermée ou inexistante, tentative de reconnexion...');
                 connectEventSource();
+            } else if (this.eventSource.readyState === EventSource.CONNECTING) {
+                console.log('Connexion en cours...');
+            } else if (this.eventSource.readyState === EventSource.OPEN) {
+                console.log('Connexion active');
             }
         }, 30000);
     }
 
-    handleMercureMessage(data) {
-        console.log('Traitement du message Mercure:', {
-            type: data.type,
-            messageType: data.messageType,
-            timestamp: new Date().toISOString(),
-            data: data
-        });
-
-        if (!data) {
-            console.warn('Message invalide reçu:', data);
-            return;
+    testMercureConnection() {
+        console.log('Test de la connexion Mercure');
+        
+        if (!this.eventSource) {
+            console.log('Pas de connexion EventSource, reconnexion...');
+            this.setupEventSource();
+            return false;
         }
+        
+        if (this.eventSource.readyState === EventSource.CLOSED) {
+            console.log('Connexion fermée, reconnexion...');
+            this.setupEventSource();
+            return false;
+        }
+        
+        if (this.eventSource.readyState === EventSource.CONNECTING) {
+            console.log('Connexion en cours...');
+            return false;
+        }
+        
+        console.log('Connexion Mercure active');
+        return true;
+    }
 
-        try {
-            // Gestion des messages normaux et IA
-            if (data.type === 'message') {
-                console.log('Nouveau message reçu via Mercure:', data);
-                this.addMessage(data, true);
-                this.scrollToBottom();
-            }
-            // Gestion des autres types de messages
-            else if (data.type === 'typing') {
-                console.log('Mise à jour du statut de frappe:', data);
-                this.updateTypingStatus(data.userId, data.isTyping);
-            }
-            else if (data.type === 'reaction') {
-                console.log('Mise à jour des réactions:', data);
+    handleMercureMessage(data) {
+        console.log('Message Mercure reçu:', data);
+        
+        // Gérer les différents types de messages
+        if (data.type === 'typing') {
+            this.handleTypingEvent(data);
+            return;
+        } else if (data.type === 'reaction') {
+            if (data.messageId && data.reactions) {
                 this.updateMessageReactions(data.messageId, data.reactions);
             }
-            else if (data.type === 'read') {
-                console.log('Mise à jour du statut de lecture:', data);
-                this.updateMessageReadStatus(data.messageId, true);
+            return;
+        } else if (data.type === 'read_status') {
+            if (data.messageId && data.isRead !== undefined) {
+                this.updateMessageReadStatus(data.messageId, data.isRead);
             }
-            else {
-                console.warn('Type de message inconnu:', data.type);
+            return;
+        } else if (data.type === 'message' || !data.type) {
+            // Si c'est un message normal ou si le type n'est pas spécifié (compatibilité)
+            if (data.id) {
+                // Vérifier si on a déjà traité ce message
+                if (this.processedMessageIds.has(data.id)) {
+                    console.log(`Message ${data.id} déjà traité, ignoré`);
+                    return;
+                }
+                
+                this.processedMessageIds.add(data.id);
+                
+                // Mettre à jour le dernier ID de message
+                this.lastMessageId = data.id;
+                
+                // Ajouter le message à l'interface
+                this.addMessageToUI(data);
             }
-        } catch (error) {
-            console.error('Erreur lors du traitement du message:', error);
-            console.error('Stack trace:', error.stack);
+        } else {
+            console.log(`Type de message inconnu: ${data.type}`, data);
+        }
+    }
+    
+    handleTypingEvent(data) {
+        const userId = data.userId;
+        const isTyping = data.isTyping;
+        
+        // Ignorer nos propres événements de frappe
+        if (userId === this.config.userId) {
+            return;
+        }
+        
+        if (isTyping) {
+            this.typingUsers.add(userId);
+        } else {
+            this.typingUsers.delete(userId);
+        }
+        
+        this.updateTypingIndicator();
+    }
+    
+    updateTypingIndicator() {
+        if (this.typingUsers.size > 0) {
+            const text = this.typingUsers.size === 1 
+                ? 'Quelqu\'un est en train d\'écrire...' 
+                : 'Plusieurs personnes sont en train d\'écrire...';
+            
+            this.typingIndicator.show();
+            this.typingText.text(text);
+        } else {
+            this.typingIndicator.hide();
         }
     }
 
@@ -358,6 +508,16 @@ class Chat {
         }
     }
 
+    addMessageToUI(messageData) {
+        console.log('Ajout du message à l\'interface:', messageData);
+        
+        // Ajouter le message à l'interface
+        this.addMessage(messageData, true);
+        
+        // Défiler vers le bas
+        this.scrollToBottom();
+    }
+
     addMessage(messageData, fromMercure = false) {
         console.log('=== Ajout d\'un message ===');
         console.log('Message data:', messageData);
@@ -372,14 +532,27 @@ class Chat {
         const existingElement = $(`[data-message-id="${messageData.id}"]`);
         if (existingElement.length) {
             console.log('Message existant trouvé, mise à jour...');
-            existingElement.replaceWith(this.createMessageElement(messageData));
+            
+            // Pour les messages IA, toujours forcer la mise à jour
+            if (messageData.messageType === 'ai' && fromMercure) {
+                console.log('Mise à jour forcée du message IA existant');
+                const messageContent = existingElement.find('.message-content');
+                messageContent.html(this.escapeHtml(messageData.content));
+                
+                // Mettre à jour les données du message
+                this.messages.set(messageData.id, messageData);
+            } else {
+                const newElement = this.createMessageElement(messageData);
+                existingElement.replaceWith(newElement);
+                this.messages.set(messageData.id, newElement);
+            }
+            
             console.log('Message mis à jour avec succès');
-            return;
+            return existingElement;
         }
 
         console.log('Création d\'un nouveau message...');
         const messageElement = this.createMessageElement(messageData);
-        this.messages.set(messageData.id, messageData);
         
         // Ajouter le message au conteneur
         if (messageData.senderId === this.config.userId) {
@@ -391,6 +564,7 @@ class Chat {
         }
         
         this.messageContainer.append(messageElement);
+        this.messages.set(messageData.id, messageElement);
         this.scrollToBottom();
         
         // Si le message vient de Mercure et n'est pas de l'utilisateur actuel, marquer comme non lu
@@ -400,6 +574,7 @@ class Chat {
         }
 
         console.log('=== Fin de l\'ajout du message ===');
+        return messageElement;
     }
 
     createMessageElement(messageData) {
@@ -408,7 +583,8 @@ class Chat {
         const isSentByMe = messageData.senderId === this.config.userId;
         const messageElement = $('<div>')
             .addClass(`message ${isSentByMe ? 'sent' : 'received'}`)
-            .toggleClass('ai', messageData.messageType === 'ai');
+            .toggleClass('ai', messageData.messageType === 'ai')
+            .attr('data-message-id', messageData.id);
 
         const timestamp = new Date(messageData.timestamp);
         const timeString = timestamp.toLocaleTimeString();
@@ -467,68 +643,62 @@ class Chat {
             .replace(/'/g, "&#039;");
     }
 
-    async handleTyping(isTyping = true) {
+    sendTypingStatus() {
+        // Éviter d'envoyer trop de mises à jour
         const now = Date.now();
-        if (now - this.lastTypingUpdate < 1000) return;
-
+        if (now - this.lastTypingUpdate < 2000) {
+            return;
+        }
+        
         this.lastTypingUpdate = now;
         
-        try {
-            const response = await fetch(this.config.routes.typing, {
+        fetch(this.config.routes.typing, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': this.config.csrfToken
+            },
+            body: JSON.stringify({
+                isTyping: true
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                console.error('Erreur lors de l\'envoi du statut de frappe', response);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur réseau lors de l\'envoi du statut de frappe', error);
+        });
+        
+        // Annuler le statut de frappe après un délai
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+        }
+        
+        this.typingTimeout = setTimeout(() => {
+            fetch(this.config.routes.typing, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': this.config.csrfToken
                 },
-                body: JSON.stringify({ typing: isTyping })
+                body: JSON.stringify({
+                    isTyping: false
+                })
             });
-
-            if (!response.ok) {
-                const data = await response.json();
-                console.error('Error updating typing status:', data);
-            }
-        } catch (error) {
-            console.error('Error updating typing status:', error);
-        }
+        }, 5000);
     }
 
-    updateTypingStatus(userId, isTyping) {
-        if (userId === this.config.userId) return;
-
-        if (isTyping) {
-            this.typingUsers.add(userId);
-        } else {
-            this.typingUsers.delete(userId);
-        }
-
-        this.updateTypingIndicator();
-    }
-
-    updateTypingIndicator() {
-        if (this.typingUsers.size > 0) {
-            this.typingText.text('Quelqu\'un est en train d\'écrire...');
-            this.typingIndicator.show();
-        } else {
-            this.typingIndicator.hide();
-        }
-    }
-
-    initEmojiPicker() {
-        const commonEmojis = ['👍', '👎', '❤️', '😊', '😂', '🎉', '👏', '🤔'];
+    async handleTyping(isTyping = true) {
+        const now = Date.now();
+        if (now - this.lastTypingUpdate < 1000) return;
         
-        this.emojiPicker.html(
-            commonEmojis.map(emoji => `
-                <span class="emoji" data-emoji="${emoji}">
-                    ${emoji}
-                </span>
-            `).join('')
-        );
-
-        this.emojiPicker.on('click', '.emoji', (e) => {
-            const emoji = $(e.target).data('emoji');
-            const currentVal = this.messageInput.val();
-            this.messageInput.val(currentVal + emoji).focus();
-        });
+        this.lastTypingUpdate = now;
+        
+        if (isTyping) {
+            this.sendTypingStatus();
+        }
     }
 
     markMessageAsUnread(messageId) {
@@ -536,5 +706,43 @@ class Chat {
         if (messageElement) {
             messageElement.removeClass('read');
         }
+    }
+
+    getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    initEmojiPicker() {
+        // Ajouter la gestion du clic sur le bouton emoji
+        this.emojiButton.on('click', (e) => {
+            e.preventDefault();
+            this.emojiPicker.toggle();
+        });
+        
+        // Fermer le sélecteur d'emoji quand on clique ailleurs
+        $(document).on('click', (e) => {
+            if (!$(e.target).closest('#emojiButton, #emojiPicker').length) {
+                this.emojiPicker.hide();
+            }
+        });
+        
+        // Créer la grille d'emojis
+        const emojis = ['😀', '😂', '😊', '❤️', '👍', '👎', '😢', '😡', '🎉', '🤔'];
+        const emojiGrid = $('<div class="emoji-grid"></div>');
+        
+        emojis.forEach(emoji => {
+            const button = $(`<button class="emoji-btn">${emoji}</button>`);
+            button.on('click', () => {
+                this.messageInput.val(this.messageInput.val() + emoji);
+                this.emojiPicker.hide();
+                this.messageInput.focus();
+            });
+            emojiGrid.append(button);
+        });
+        
+        this.emojiPicker.empty().append(emojiGrid);
     }
 }

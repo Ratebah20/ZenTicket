@@ -46,13 +46,22 @@ class MercureJwtProvider
 
         $now = new \DateTimeImmutable();
         
+        // Assurer que le token a des permissions larges pour s'abonner
         return $config->builder()
             ->withClaim('mercure', [
-                'subscribe' => ['*']
+                'subscribe' => ['*']  // Autoriser l'abonnement à tous les topics
             ])
             ->issuedAt($now)
             ->expiresAt($now->modify('+1 hour'))
             ->getToken($config->signer(), $config->signingKey())
             ->toString();
+    }
+    
+    /**
+     * Génère un cookie pour l'autorisation Mercure
+     */
+    public function getCookieValue(): string
+    {
+        return 'Bearer ' . $this->getSubscriberToken();
     }
 }
