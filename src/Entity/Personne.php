@@ -22,7 +22,7 @@ abstract class Personne
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['user:read', 'ticket:read'])]
+    #[Groups(['user:read', 'utilisateur:read', 'technicien:read', 'ticket:read', 'commentaire:read', 'message:read'])]
     protected ?int $id = null;
 
     #[ORM\Column(length: 255)]
@@ -33,20 +33,23 @@ abstract class Personne
         minMessage: 'Le nom doit contenir au moins {{ limit }} caractères',
         maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères'
     )]
-    #[Groups(['user:read', 'ticket:read'])]
+    #[Groups(['user:read', 'utilisateur:read', 'utilisateur:write', 'technicien:read', 'technicien:write', 'ticket:read', 'commentaire:read', 'message:read'])]
     protected ?string $nom = null;
 
     #[ORM\Column(length: 255, unique: true)]
     #[Assert\NotBlank(message: 'L\'email est obligatoire')]
     #[Assert\Email(message: 'L\'email {{ value }} n\'est pas un email valide')]
-    #[Groups(['user:read', 'ticket:read'])]
+    #[Groups(['user:read', 'utilisateur:read', 'utilisateur:write', 'technicien:read', 'technicien:write', 'ticket:read', 'commentaire:read', 'message:read'])]
     protected ?string $email = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Le mot de passe est obligatoire', groups: ['create'])]
+    #[Assert\Length(min: 8, minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères')]
+    #[Groups(['utilisateur:write', 'technicien:write'])]
     protected ?string $password = null;
 
     #[ORM\Column(type: "json")]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'utilisateur:read', 'utilisateur:write', 'technicien:read', 'technicien:write'])]
     protected array $roles = [];
 
     public function __construct()

@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\NotificationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * @ORM\Entity(repositoryClass=NotificationRepository::class)
@@ -19,29 +20,37 @@ class Notification
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['notification:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['notification:read', 'notification:write'])]
     private ?string $titre = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['notification:read', 'notification:write'])]
     private ?string $message = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['notification:read', 'notification:write'])]
     private ?string $type = null;
 
     #[ORM\Column]
+    #[Groups(['notification:read', 'notification:write'])]
     private ?bool $lu = false;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['notification:read'])]
     private ?\DateTimeInterface $dateCreation = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['notification:read', 'notification:write'])]
     private ?Utilisateur $utilisateur = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['notification:read', 'notification:write'])]
     private ?Ticket $ticket = null;
 
     public function __construct()

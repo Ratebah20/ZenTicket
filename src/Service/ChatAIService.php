@@ -65,18 +65,13 @@ class ChatAIService
                         ->setMessage($content)
                         ->setMessageType(MessageType::AI)
                         ->setTimestamp(new \DateTime())
-                        ->setSenderId($ia->getId());
-
+                        ->setSenderId($ia->getId())
+                        ->setUserMessageId($userMessage->getId()); // Associer l'ID du message utilisateur
+                
                 $this->logger->info("Message IA créé avec l'ID: " . $aiMessage->getId());
                 
-                try {
-                    $this->logger->info("Publication du message via WebSocket...");
-                    $this->webSocketService->publishNewMessage($aiMessage);
-                    $this->logger->info("Message publié avec succès via WebSocket");
-                } catch (\Exception $e) {
-                    $this->logger->error("Erreur lors de la publication WebSocket: " . $e->getMessage());
-                    $this->logger->error("Trace WebSocket: " . $e->getTraceAsString());
-                }
+                // Nous ne publions plus le message ici, cela sera fait dans handleUserMessage
+                // après la persistance en base de données
                 
                 return $aiMessage;
             }
@@ -134,30 +129,25 @@ class ChatAIService
                 // Publier le message via WebSocket avec une priorité élevée
                 $this->logger->info("Publication de la réponse via WebSocket");
                 try {
-                    // Première tentative de publication
-                    $this->webSocketService->publishNewMessage($aiMessage);
+                    // Ajouter un identifiant unique pour le suivi des messages
+                    $messageData = [
+                        'id' => $aiMessage->getId(),
+                        'content' => $aiMessage->getMessage(),
+                        'messageType' => $aiMessage->getMessageType()->value,
+                        'senderId' => $aiMessage->getSenderId(),
+                        'timestamp' => $aiMessage->getTimestamp()->format('c'),
+                        'mercureId' => uniqid('mercure_', true), // Identifiant unique pour Mercure
+                        'reactions' => [],
+                        'isRead' => false,
+                        'userMessageId' => $aiMessage->getUserMessageId() // Associer l'ID du message utilisateur
+                    ];
                     
-                    // Attendre un court instant
-                    usleep(200000); // 200ms
-                    
-                    // Deuxième tentative de publication pour s'assurer que le message est bien reçu
-                    $this->logger->info("Seconde publication pour garantir la réception");
-                    $this->webSocketService->publishNewMessage($aiMessage);
-                    
+                    // Publication unique du message
+                    $this->webSocketService->publishMessage($messageData, "/chat/{$chatbox->getId()}");
                     $this->logger->info("Réponse publiée avec succès");
                 } catch (\Exception $e) {
                     $this->logger->error("Erreur lors de la publication WebSocket: " . $e->getMessage());
                     $this->logger->error("Trace: " . $e->getTraceAsString());
-                    
-                    // Tentative de récupération en cas d'échec
-                    try {
-                        $this->logger->info("Tentative de récupération après échec...");
-                        usleep(500000); // 500ms
-                        $this->webSocketService->publishNewMessage($aiMessage);
-                        $this->logger->info("Récupération réussie");
-                    } catch (\Exception $e2) {
-                        $this->logger->error("Échec de la récupération: " . $e2->getMessage());
-                    }
                 }
             } else {
                 $this->logger->warning("Aucune réponse générée par l'IA");

@@ -1,0 +1,38 @@
+api_platform:
+    title: 3INNOV API
+    version: 1.0.0
+    description: 'API pour le projet 3INNOV'
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']
+        html: ['text/html']
+    docs_formats:
+        jsonld: ['application/ld+json']
+        jsonopenapi: ['application/vnd.openapi+json']
+        html: ['text/html']
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+        pagination_enabled: true
+        pagination_client_enabled: true
+        pagination_items_per_page: 10
+    collection:
+        pagination:
+            enabled: true
+            items_per_page_parameter_name: itemsPerPage
+    swagger:
+        versions: [3]
+        api_keys:
+            JWT:
+                name: Authorization
+                type: header
+    openapi:
+        contact:
+            name: Équipe 3INNOV
+            email: contact@3innov.fr
+        termsOfService: https://3innov.fr/terms
+    enable_docs: true
+    enable_swagger: true
+    enable_swagger_ui: true
+    enable_re_doc: true

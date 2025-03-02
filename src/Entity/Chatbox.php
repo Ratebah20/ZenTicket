@@ -6,6 +6,7 @@ use App\Repository\ChatboxRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * Entité représentant une boîte de discussion
@@ -19,12 +20,14 @@ class Chatbox
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['chatbox:read', 'ticket:read'])]
     private ?int $id = null;
 
     /**
      * Ticket associé à cette chatbox
      */
     #[ORM\OneToOne(mappedBy: 'chatbox', cascade: ['persist', 'remove'])]
+    #[Groups(['chatbox:read', 'chatbox:write'])]
     private ?Ticket $ticket = null;
 
     /**
@@ -33,21 +36,25 @@ class Chatbox
      * @var Collection<int, Message>
      */
     #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'chatbox')]
+    #[Groups(['chatbox:item:read'])]
     private Collection $messages;
 
     #[ORM\ManyToOne(inversedBy: 'chatBoxes')]
+    #[Groups(['chatbox:read', 'chatbox:write'])]
     private ?IA $ia = null;
 
     /**
      * Date de création de la chatbox
      */
     #[ORM\Column(type: 'datetime', nullable: true)]
+    #[Groups(['chatbox:read'])]
     private ?\DateTimeInterface $createdAt = null;
 
     /**
      * Indique si c'est une chatbox temporaire pour l'assistant IA
      */
     #[ORM\Column(type: 'boolean')]
+    #[Groups(['chatbox:read', 'chatbox:write'])]
     private bool $isTemporary = false;
 
     /**

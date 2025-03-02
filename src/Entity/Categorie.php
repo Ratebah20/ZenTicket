@@ -6,6 +6,8 @@ use App\Repository\CategorieRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Entité représentant une catégorie de tickets
@@ -19,21 +21,29 @@ class Categorie
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['categorie:read', 'ticket:read'])]
     private ?int $id = null;
 
     /**
      * Nom de la catégorie
      */
     #[ORM\Column(length: 50)]
+    #[Assert\NotBlank(message: 'Le nom est obligatoire')]
+    #[Assert\Length(max: 50, maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères')]
+    #[Groups(['categorie:read', 'categorie:write', 'ticket:read'])]
     private ?string $nom = null;
 
     /**
      * Description détaillée de la catégorie
      */
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'La description est obligatoire')]
+    #[Assert\Length(max: 255, maxMessage: 'La description ne peut pas dépasser {{ limit }} caractères')]
+    #[Groups(['categorie:read', 'categorie:write'])]
     private ?string $description = null;
 
     #[ORM\ManyToOne(inversedBy: 'categories')]
+    #[Groups(['categorie:read'])]
     private ?Administrateur $administrateur = null;
 
     /**
@@ -42,6 +52,7 @@ class Categorie
      * @var Collection<int, Ticket>
      */
     #[ORM\OneToMany(mappedBy: 'categorie', targetEntity: Ticket::class)]
+    #[Groups(['categorie:item:read'])]
     private Collection $tickets;
 
     public function __construct()

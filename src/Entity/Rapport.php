@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * Entité représentant un rapport (intervention ou statistique)
@@ -29,43 +30,56 @@ class Rapport
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['rapport:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?string $titre = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?string $contenu = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['rapport:read'])]
     private ?\DateTimeInterface $dateCreation = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?string $type = null;
 
     #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?string $periode = null;
 
     #[ORM\Column(length: 50)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?string $service = null;
 
     #[ORM\ManyToOne]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?Ticket $ticketPrincipal = null;
 
     #[ORM\ManyToMany(targetEntity: Ticket::class)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private Collection $tickets;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?Personne $auteur = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?array $statistiques = null;
 
     #[ORM\Column(type: Types::INTEGER, nullable: true)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?int $tempsPasse = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['rapport:read', 'rapport:write'])]
     private ?string $recommandations = null;
 
     public function __construct()

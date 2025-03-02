@@ -26,17 +26,17 @@ class Ticket
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['ticket:read'])]
+    #[Groups(['ticket:read', 'utilisateur:item:read', 'technicien:item:read', 'categorie:item:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
-    #[Groups(['ticket:read', 'ticket:write'])]
+    #[Groups(['ticket:read', 'ticket:write', 'utilisateur:item:read', 'technicien:item:read', 'categorie:item:read'])]
     private ?string $titre = null;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank]
-    #[Groups(['ticket:read', 'ticket:write'])]
+    #[Groups(['ticket:read', 'ticket:write', 'utilisateur:item:read', 'technicien:item:read'])]
     private ?string $description = null;
 
     #[ORM\Column(length: 50)]
@@ -46,7 +46,7 @@ class Ticket
         self::STATUT_RESOLU,
         self::STATUT_CLOTURE
     ])]
-    #[Groups(['ticket:read', 'ticket:write'])]
+    #[Groups(['ticket:read', 'ticket:write', 'utilisateur:item:read', 'technicien:item:read', 'categorie:item:read'])]
     private ?string $statut = self::STATUT_NOUVEAU;
 
     #[ORM\Column(length: 50)]
@@ -56,11 +56,11 @@ class Ticket
         self::PRIORITE_HAUTE,
         self::PRIORITE_URGENTE
     ])]
-    #[Groups(['ticket:read', 'ticket:write'])]
+    #[Groups(['ticket:read', 'ticket:write', 'utilisateur:item:read', 'technicien:item:read'])]
     private ?string $priorite = self::PRIORITE_NORMALE;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    #[Groups(['ticket:read'])]
+    #[Groups(['ticket:read', 'utilisateur:item:read', 'technicien:item:read', 'categorie:item:read'])]
     private ?\DateTimeInterface $dateCreation = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
@@ -74,16 +74,16 @@ class Ticket
     #[ORM\ManyToOne(inversedBy: 'tickets')]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotNull(message: "L'utilisateur est obligatoire")]
-    #[Groups(['ticket:read', 'ticket:write'])]
+    #[Groups(['ticket:read', 'ticket:write', 'technicien:item:read', 'categorie:item:read'])]
     private ?Utilisateur $utilisateur = null;
 
     #[ORM\ManyToOne(inversedBy: 'tickets')]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['ticket:read', 'ticket:write'])]
+    #[Groups(['ticket:read', 'ticket:write', 'utilisateur:item:read', 'categorie:item:read'])]
     private ?Technicien $technicien = null;
 
     #[ORM\OneToMany(mappedBy: 'ticket', targetEntity: Commentaire::class, orphanRemoval: true)]
-    #[Groups(['ticket:read'])]
+    #[Groups(['ticket:item:read'])]
     private Collection $commentaires;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -97,11 +97,12 @@ class Ticket
     #[ORM\ManyToOne(inversedBy: 'tickets')]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotNull(message: "La catégorie est obligatoire")]
-    #[Groups(['ticket:read', 'ticket:write'])]
+    #[Groups(['ticket:read', 'ticket:write', 'utilisateur:item:read', 'technicien:item:read'])]
     private ?Categorie $categorie = null;
 
     #[ORM\OneToOne(inversedBy: 'ticket', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['ticket:read'])]
     private ?Chatbox $chatbox = null;
 
     public function __construct()

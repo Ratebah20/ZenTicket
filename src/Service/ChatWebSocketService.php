@@ -52,6 +52,10 @@ class ChatWebSocketService
                 'type' => 'message' // Ajouter un type pour différencier des autres événements
             ];
             
+            if ($message->getMessageType()->value === 'ai' && $message->getUserMessageId()) {
+                $data['userMessageId'] = $message->getUserMessageId();
+            }
+            
             $update = new Update(
                 $topic,
                 json_encode($data),
@@ -90,6 +94,51 @@ class ChatWebSocketService
         $this->logger->info("=== Fin de la publication du message ===", [
             'success' => $success
         ]);
+    }
+
+    /**
+     * Publie des données directement sur un topic Mercure
+     * 
+     * @param array $data Les données à publier
+     * @param string $topic Le topic sur lequel publier
+     * @return bool Succès ou échec de la publication
+     */
+    public function publishMessage(array $data, string $topic): bool
+    {
+        try {
+            $this->logger->info("=== Début de la publication des données ===", [
+                'topic' => $topic,
+                'dataKeys' => array_keys($data)
+            ]);
+            
+            // Ajouter un type par défaut si non spécifié
+            if (!isset($data['type'])) {
+                $data['type'] = 'message';
+            }
+            
+            $update = new Update(
+                $topic,
+                json_encode($data),
+                true  // Private = true pour forcer l'authentification
+            );
+            
+            $this->logger->info('Publication WebSocket', [
+                'topic' => $topic,
+                'data' => $data,
+                'private' => true
+            ]);
+            
+            $this->hub->publish($update);
+            
+            $this->logger->info('Données publiées avec succès');
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la publication WebSocket', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
     }
 
     /**

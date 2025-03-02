@@ -1,63 +1,75 @@
 class Chat {
     constructor(config) {
-        console.log('Chat constructor called with config:', config);
-        if (!config) {
-            console.error('No config provided to Chat constructor');
-            return;
-        }
-
+        console.log('Initialisation du chat avec la configuration:', config);
+        
         this.config = config;
-        this.messageContainer = $('#messages');
-        this.messageInput = $('#messageInput');
-        this.sendButton = $('#sendButton');
-        this.emojiButton = $('#emojiButton');
-        this.emojiPicker = $('#emojiPicker');
-        this.typingIndicator = $('.typing-indicator');
-        this.typingText = $('.typing-text');
-        this.typingTimeout = null;
-        this.lastTypingUpdate = 0;
+        this.messageContainer = $('#message-container');
+        this.messageForm = $('#message-form');
+        this.messageInput = $('#message-input');
+        this.sendButton = $('#send-button');
+        this.emojiButton = $('#emoji-button');
+        this.emojiPicker = $('#emoji-picker');
+        this.typingIndicator = $('#typing-indicator');
+        
         this.messages = new Map();
-        this.typingUsers = new Set();
-        this.eventSource = null;
-        this.connectionAttempts = 0;
-        this.maxReconnectAttempts = 10;
-        this.baseReconnectDelay = 1000;
-        this.lastMessageId = null;
         this.processedMessageIds = new Set();
-        this.reconnectButton = $('#reconnect-button');
+        this.pendingAIMessages = [];
+        this.pendingAIMessagesByUserMessage = new Map();
+        this.pendingAIMessagesByTempUserMessage = new Map();
+        this.pendingMessageTimeouts = new Map();
+        this.hasMoreMessages = true;
+        this.isLoading = false;
+        this.processingQueue = false;
+        this.lastUserMessageTimestamp = null;
+        this.messageElements = new Map();
+
+        // Nouvel attribut pour suivre l'ID du dernier message utilisateur
+        this.lastUserMessageId = null;
+        
+        // Nouvel attribut pour indiquer si le traitement des messages IA est temporairement suspendu
+        this.pauseAIMessageProcessing = false;
 
         this.currentPage = 1;
         this.isInitialized = false;
-
-        // Vérifier que les éléments DOM existent
-        if (!this.messageContainer.length) {
-            console.error('Message container not found');
-            return;
-        }
-        if (!this.messageInput.length) {
-            console.error('Message input not found');
-            return;
-        }
-        if (!this.sendButton.length) {
-            console.error('Send button not found');
-            return;
-        }
-
+        
         this.init();
     }
 
     async init() {
-        console.log('Initializing chat...');
-        try {
-            await this.loadMessages();
-            this.setupEventListeners();
-            this.initEmojiPicker();
-            this.setupEventSource();
-            this.isInitialized = true;
-            console.log('Chat initialized successfully');
-        } catch (error) {
-            console.error('Error initializing chat:', error);
+        console.log('Initialisation du chat');
+        
+        // Vérifier que les éléments DOM existent
+        if (!this.messageContainer.length) {
+            console.error('Conteneur de messages non trouvé');
+            return;
         }
+        if (!this.messageForm.length) {
+            console.error('Formulaire de message non trouvé');
+            return;
+        }
+        if (!this.messageInput.length) {
+            console.error('Champ de saisie non trouvé');
+            return;
+        }
+        if (!this.sendButton.length) {
+            console.error('Bouton d\'envoi non trouvé');
+            return;
+        }
+        
+        // Configurer les écouteurs d'événements
+        this.setupEventListeners();
+        
+        // Initialiser le sélecteur d'emoji
+        this.initEmojiPicker();
+        
+        // Charger les messages initiaux
+        this.loadInitialMessages();
+        
+        // Configurer la source d'événements pour les messages en temps réel
+        this.setupEventSource();
+        
+        console.log('Chat initialisé avec succès');
+        this.isInitialized = true;
     }
 
     setupEventListeners() {
@@ -116,276 +128,202 @@ class Chat {
         this.initEmojiPicker();
     }
 
-    async sendMessage() {
-        const content = this.messageInput.val().trim();
-        console.log('=== Début de l\'envoi du message ===');
-        console.log('Message à envoyer:', content);
-        console.log('Configuration:', {
-            routes: this.config.routes,
-            csrfToken: this.config.csrfToken ? 'présent' : 'manquant'
+    sendMessage(content, type = 'text') {
+        console.log('=== Envoi d\'un message ===');
+        console.log('Content:', content);
+        console.log('Type:', type);
+        
+        // Vérifier si le contenu est vide
+        if (!content || content.trim() === '') {
+            console.log('Contenu vide, annulation de l\'envoi');
+            return;
+        }
+        
+        // Désactiver le bouton d'envoi pendant l'envoi
+        this.disableSendButton();
+        
+        // Créer un ID temporaire pour le message
+        const tempId = `temp-${Date.now()}`;
+        console.log(`ID temporaire créé: ${tempId}`);
+        
+        // Créer un message temporaire pour l'affichage immédiat
+        const tempMessage = {
+            id: tempId,
+            content: content,
+            senderId: this.config.userId,
+            senderName: this.config.userName,
+            senderAvatar: this.config.userAvatar,
+            timestamp: new Date().toISOString(),
+            messageType: 'user',
+            isRead: false,
+            reactions: []
+        };
+        
+        // Ajouter le message temporaire à l'interface
+        console.log('Ajout du message temporaire à l\'interface');
+        const messageElement = this.addMessage(tempMessage);
+        
+        // Mettre à jour la variable pauseAIMessageProcessing pour indiquer qu'un message est en cours d'envoi
+        this.pauseAIMessageProcessing = true;
+        
+        // Enregistrer l'heure d'envoi du message
+        this.lastUserMessageTimestamp = new Date();
+        
+        // Envoyer le message au serveur
+        console.log('Envoi du message au serveur');
+        $.ajax({
+            url: this.config.sendMessageUrl,
+            method: 'POST',
+            data: {
+                content: content,
+                type: type,
+                conversationId: this.config.conversationId,
+                _token: this.config.csrfToken
+            },
+            success: (response) => {
+                console.log('Réponse du serveur:', response);
+                
+                if (response.success) {
+                    console.log('Message envoyé avec succès');
+                    
+                    // Mettre à jour l'ID du message temporaire avec l'ID réel
+                    const realId = response.messageId;
+                    console.log(`ID réel du message: ${realId}`);
+                    
+                    // Mettre à jour l'élément du message avec l'ID réel
+                    $(messageElement).attr('data-message-id', realId);
+                    
+                    // Mettre à jour les Maps
+                    this.messageElements.set(realId, messageElement);
+                    this.messageElements.delete(tempId);
+                    
+                    // Mettre à jour le message dans la Map des messages
+                    tempMessage.id = realId;
+                    this.messages.set(realId, tempMessage);
+                    this.messages.delete(tempId);
+                    
+                    // Mettre à jour l'ID du dernier message utilisateur
+                    this.lastUserMessageId = realId;
+                    console.log(`ID du dernier message utilisateur mis à jour: ${this.lastUserMessageId}`);
+                    
+                    // NOUVEAU: Vérifier s'il y a des messages IA en attente pour le message temporaire
+                    const pendingAIMessages = this.pendingAIMessagesByTempUserMessage.get(tempId);
+                    if (pendingAIMessages && pendingAIMessages.length > 0) {
+                        console.log(`Transfert de ${pendingAIMessages.length} messages IA en attente du message temporaire ${tempId} vers le message réel ${realId}`);
+                        
+                        // Copier les messages en attente pour éviter les problèmes de modification pendant l'itération
+                        const messagesToProcess = [...pendingAIMessages];
+                        
+                        // Vider la liste des messages en attente pour le message temporaire
+                        this.pendingAIMessagesByTempUserMessage.delete(tempId);
+                        
+                        // Attendre un court instant pour s'assurer que le message utilisateur est bien affiché
+                        setTimeout(() => {
+                            messagesToProcess.forEach(msg => {
+                                console.log('Transfert du message IA:', msg);
+                                // Mettre à jour le userMessageId avec l'ID réel
+                                msg.userMessageId = realId;
+                                // Ajouter le message IA à l'interface
+                                this.addMessage(msg, true);
+                            });
+                        }, 100);
+                    }
+                    
+                    // Autoriser à nouveau le traitement des messages IA
+                    this.pauseAIMessageProcessing = false;
+                    
+                    // NOUVEAU: Traiter les messages IA en attente pour le message réel
+                    this.processPendingAIMessages(realId);
+                } else {
+                    console.error('Erreur lors de l\'envoi du message:', response.error);
+                    
+                    // Afficher un message d'erreur
+                    this.showErrorMessage('Erreur lors de l\'envoi du message: ' + response.error);
+                    
+                    // Supprimer le message temporaire
+                    $(messageElement).remove();
+                    this.messageElements.delete(tempId);
+                    this.messages.delete(tempId);
+                    
+                    // Autoriser à nouveau le traitement des messages IA
+                    this.pauseAIMessageProcessing = false;
+                }
+                
+                // Réactiver le bouton d'envoi
+                this.enableSendButton();
+            },
+            error: (xhr, status, error) => {
+                console.error('Erreur AJAX lors de l\'envoi du message:', error);
+                
+                // Afficher un message d'erreur
+                this.showErrorMessage('Erreur lors de l\'envoi du message: ' + error);
+                
+                // Supprimer le message temporaire
+                $(messageElement).remove();
+                this.messageElements.delete(tempId);
+                this.messages.delete(tempId);
+                
+                // Autoriser à nouveau le traitement des messages IA
+                this.pauseAIMessageProcessing = false;
+                
+                // Réactiver le bouton d'envoi
+                this.enableSendButton();
+            }
         });
         
-        if (!content) {
-            console.log('Message vide, annulation de l\'envoi');
-            return;
-        }
-
-        if (!this.config.routes.send) {
-            console.error('Route d\'envoi non configurée');
-            return;
-        }
-
-        if (!this.config.csrfToken) {
-            console.error('Token CSRF manquant');
-            return;
-        }
+        // Vider le champ de saisie
+        this.messageInput.val('');
         
-        // Vérifier la connexion Mercure avant d'envoyer
-        this.testMercureConnection();
-
-        try {
-            console.log('Envoi de la requête à:', this.config.routes.send);
-            console.log('Payload:', { message: content });
-            console.log('En-têtes:', {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': this.config.csrfToken
-            });
-            
-            const response = await fetch(this.config.routes.send, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.config.csrfToken
-                },
-                body: JSON.stringify({ message: content })
-            });
-
-            console.log('Réponse brute:', response);
-            console.log('Statut de la réponse:', response.status);
-            console.log('En-têtes de la réponse:', {
-                type: response.headers.get('content-type'),
-                status: response.statusText
-            });
-
-            const responseText = await response.text();
-            console.log('Texte de la réponse:', responseText);
-
-            let data;
-            try {
-                data = JSON.parse(responseText);
-                console.log('Données de la réponse (JSON):', data);
-            } catch (e) {
-                console.error('Erreur lors du parsing JSON:', e);
-                console.log('Réponse non-JSON reçue:', responseText);
-                throw new Error('Réponse invalide du serveur');
-            }
-
-            if (response.ok) {
-                console.log('Message envoyé avec succès');
-                this.messageInput.val('');
-                this.handleTyping(false);
-                
-                console.log('Ajout du message à l\'interface');
-                this.addMessage(data, false);
-
-                console.log('En attente de la réponse de l\'IA...');
-            } else {
-                console.error('Erreur lors de l\'envoi:', data);
-                if (data.error) {
-                    const errorMessage = data.error + (data.details ? '\n' + data.details : '');
-                    console.error('Message d\'erreur:', errorMessage);
-                    alert(errorMessage);
-                } else {
-                    console.error('Erreur générique');
-                    alert('Erreur lors de l\'envoi du message. Veuillez réessayer.');
-                }
-            }
-        } catch (error) {
-            console.error('Erreur technique lors de l\'envoi:', error);
-            console.error('Stack trace:', error.stack);
-            alert('Erreur de connexion. Veuillez réessayer.');
-        }
+        // Réinitialiser la hauteur du champ de saisie
+        this.resetInputHeight();
         
-        console.log('=== Fin de l\'envoi du message ===');
+        // Défiler vers le bas
+        this.scrollToBottom();
     }
 
     setupEventSource() {
-        console.log('=== Configuration de la connexion Mercure ===');
-        console.log('Topic URL:', this.config.mercureUrl);
-        console.log('Subscriber Token:', this.config.subscriberToken ? 'présent' : 'manquant');
+        console.log('Configuration de la source d\'événements Mercure');
         
-        let reconnectTimeout = null;
+        // Vérifier si l'URL Mercure est configurée
+        if (!this.config.mercureUrl) {
+            console.error('URL Mercure non configurée');
+            return;
+        }
         
-        const connectEventSource = () => {
-            console.log('Tentative de connexion à Mercure...', {
-                readyState: this.eventSource?.readyState,
-                attempt: this.connectionAttempts + 1
-            });
-
-            if (this.eventSource) {
-                console.log('Fermeture de l\'ancienne connexion');
-                this.eventSource.close();
-            }
-
-            // Construire l'URL avec le topic uniquement
-            const url = new URL(this.config.mercureUrl);
-            url.searchParams.append('topic', `/chat/${this.config.id}`);
+        try {
+            // Créer une nouvelle source d'événements
+            const eventSource = new EventSource(this.config.mercureUrl);
             
-            console.log('URL complète:', url.toString());
-
-            try {
-                console.log('Création de l\'objet EventSource...');
+            // Configurer les gestionnaires d'événements
+            eventSource.onopen = (event) => {
+                console.log('Connexion Mercure établie');
+            };
+            
+            eventSource.onmessage = (event) => {
+                console.log('Message Mercure reçu');
+                this.handleMercureMessage(event);
+            };
+            
+            eventSource.onerror = (event) => {
+                console.error('Erreur de connexion Mercure:', event);
                 
-                // Créer une instance de EventSourcePolyfill qui supporte les en-têtes personnalisés
-                const headers = {};
+                // Fermer la connexion en cas d'erreur
+                eventSource.close();
                 
-                // Ajouter le token dans l'en-tête Authorization
-                if (this.config.subscriberToken) {
-                    headers['Authorization'] = `Bearer ${this.config.subscriberToken}`;
-                }
-                
-                // Utiliser un polyfill EventSource qui prend en charge les en-têtes personnalisés
-                // Si EventSourcePolyfill n'est pas disponible, nous utilisons une solution de secours
-                if (typeof EventSourcePolyfill !== 'undefined') {
-                    console.log('Utilisation de EventSourcePolyfill avec en-têtes personnalisés');
-                    this.eventSource = new EventSourcePolyfill(url.toString(), {
-                        headers: headers
-                    });
-                } else {
-                    // Solution de secours: utiliser le cookie pour l'authentification
-                    console.log('EventSourcePolyfill non disponible, utilisation de cookies');
-                    document.cookie = `mercureAuthorization=Bearer ${this.config.subscriberToken}; path=/; SameSite=Lax`;
-                    this.eventSource = new EventSource(url.toString(), { withCredentials: true });
-                }
-                
-                console.log('EventSource créé avec succès, état initial:', this.eventSource.readyState);
-
-                this.eventSource.onopen = (e) => {
-                    console.log('Connexion Mercure établie', {
-                        readyState: this.eventSource.readyState,
-                        lastEventId: this.eventSource.lastEventId,
-                        url: url.toString()
-                    });
-                    this.connectionAttempts = 0;
-                    
-                    // Effacer tout timeout de reconnexion existant
-                    if (reconnectTimeout) {
-                        clearTimeout(reconnectTimeout);
-                        reconnectTimeout = null;
-                    }
-                    
-                    // Indiquer visuellement que la connexion est établie
-                    console.log('Connexion WebSocket active');
-                    
-                    // Vérifier si des messages sont en attente
-                    console.log('Vérification des messages en attente...');
-                    this.loadMessages();
-                };
-
-                this.eventSource.onerror = (event) => {
-                    console.error('Erreur EventSource:', event);
-                    
-                    // Afficher plus d'informations sur l'erreur
-                    if (event.target && event.target.readyState) {
-                        console.error('État de la connexion lors de l\'erreur:', 
-                            event.target.readyState === EventSource.CONNECTING ? 'CONNECTING' :
-                            event.target.readyState === EventSource.OPEN ? 'OPEN' :
-                            event.target.readyState === EventSource.CLOSED ? 'CLOSED' : 'UNKNOWN'
-                        );
-                    }
-                    
-                    // Vérifier si l'erreur est liée à CORS
-                    if (event.target && event.target.url) {
-                        console.error('URL qui a causé l\'erreur:', event.target.url);
-                    }
-                    
-                    // Afficher le bouton de reconnexion
-                    this.reconnectButton.show();
-                    
-                    if (this.eventSource.readyState === EventSource.CLOSED) {
-                        console.log('Connexion fermée, tentative de reconnexion...');
-                        this.connectionAttempts++;
-                        
-                        if (this.connectionAttempts < this.maxReconnectAttempts) {
-                            const delay = Math.min(
-                                this.baseReconnectDelay * Math.pow(1.5, this.connectionAttempts),
-                                30000
-                            );
-                            console.log(`Reconnexion dans ${delay}ms (tentative ${this.connectionAttempts}/${this.maxReconnectAttempts})`);
-                            
-                            if (reconnectTimeout) {
-                                clearTimeout(reconnectTimeout);
-                            }
-                            
-                            reconnectTimeout = setTimeout(() => {
-                                connectEventSource();
-                            }, delay);
-                        } else {
-                            console.error(`Nombre maximum de tentatives de reconnexion atteint (${this.maxReconnectAttempts})`);
-                        }
-                    }
-                };
-
-                this.eventSource.onmessage = (e) => {
-                    console.log('Message Mercure reçu :', {
-                        data: e.data,
-                        lastEventId: e.lastEventId,
-                        origin: e.origin,
-                        eventType: e.type
-                    });
-
-                    try {
-                        const data = JSON.parse(e.data);
-                        console.log('Message parsé :', data);
-                        
-                        this.handleMercureMessage(data);
-                    } catch (error) {
-                        console.error('Erreur lors du traitement du message:', error);
-                        console.error('Message brut reçu:', e.data);
-                    }
-                };
-                
-                // Vérifier l'état de la connexion toutes les 30 secondes
-                setInterval(() => {
-                    if (this.eventSource) {
-                        const state = this.eventSource.readyState;
-                        console.log('État actuel de la connexion EventSource:', 
-                            state === EventSource.CONNECTING ? 'CONNECTING' :
-                            state === EventSource.OPEN ? 'OPEN' :
-                            state === EventSource.CLOSED ? 'CLOSED' : 'UNKNOWN'
-                        );
-                        
-                        // Si la connexion est fermée, afficher le bouton de reconnexion
-                        if (state === EventSource.CLOSED) {
-                            this.reconnectButton.show();
-                        } else if (state === EventSource.OPEN) {
-                            this.reconnectButton.hide();
-                        }
-                    }
-                }, 30000);
-                
-                console.log('EventSource configuré avec succès');
-            } catch (error) {
-                console.error('Erreur lors de la création de EventSource:', error);
-                this.reconnectButton.show();
-            }
-        };
-        
-        // Réinitialiser le compteur de tentatives et démarrer la connexion
-        this.connectionAttempts = 0;
-        connectEventSource();
-        
-        // Vérifier périodiquement l'état de la connexion
-        this.connectionCheckInterval = setInterval(() => {
-            if (!this.eventSource || this.eventSource.readyState === EventSource.CLOSED) {
-                console.log('Connexion fermée ou inexistante, tentative de reconnexion...');
-                connectEventSource();
-            } else if (this.eventSource.readyState === EventSource.CONNECTING) {
-                console.log('Connexion en cours...');
-            } else if (this.eventSource.readyState === EventSource.OPEN) {
-                console.log('Connexion active');
-            }
-        }, 30000);
+                // Afficher un message d'erreur
+                this.showErrorMessage('Erreur de connexion au serveur de messages en temps réel. Rechargez la page pour réessayer.');
+            };
+            
+            // Stocker la source d'événements
+            this.eventSource = eventSource;
+            
+            console.log('Source d\'événements Mercure configurée avec succès');
+        } catch (error) {
+            console.error('Erreur lors de la configuration de la source d\'événements Mercure:', error);
+            
+            // Afficher un message d'erreur
+            this.showErrorMessage('Erreur de connexion au serveur de messages en temps réel: ' + error.message);
+        }
     }
 
     testMercureConnection() {
@@ -412,45 +350,162 @@ class Chat {
         return true;
     }
 
-    handleMercureMessage(data) {
-        console.log('Message Mercure reçu:', data);
-        
-        // Gérer les différents types de messages
-        if (data.type === 'typing') {
-            this.handleTypingEvent(data);
-            return;
-        } else if (data.type === 'reaction') {
-            if (data.messageId && data.reactions) {
+    handleMercureMessage(event) {
+        try {
+            console.log('=== Réception d\'un message Mercure ===');
+            console.log('Event data:', event.data);
+            
+            const data = JSON.parse(event.data);
+            console.log('Parsed data:', data);
+            
+            // Vérifier si le message est destiné à cette conversation
+            if (data.conversationId !== this.config.conversationId) {
+                console.log(`Message pour une autre conversation (${data.conversationId}), ignoré`);
+                return;
+            }
+            
+            // Vérifier si c'est un message de mise à jour de statut de lecture
+            if (data.type === 'read_status') {
+                console.log('Mise à jour du statut de lecture reçue');
+                this.updateMessageReadStatus(data.messageId, true);
+                return;
+            }
+            
+            // Vérifier si c'est un message de réaction
+            if (data.type === 'reaction') {
+                console.log('Réaction reçue');
                 this.updateMessageReactions(data.messageId, data.reactions);
+                return;
             }
-            return;
-        } else if (data.type === 'read_status') {
-            if (data.messageId && data.isRead !== undefined) {
-                this.updateMessageReadStatus(data.messageId, data.isRead);
+            
+            // Vérifier si c'est un message de suppression
+            if (data.type === 'delete') {
+                console.log('Suppression de message reçue');
+                this.deleteMessage(data.messageId);
+                return;
             }
-            return;
-        } else if (data.type === 'message' || !data.type) {
-            // Si c'est un message normal ou si le type n'est pas spécifié (compatibilité)
-            if (data.id) {
-                // Vérifier si on a déjà traité ce message
-                if (this.processedMessageIds.has(data.id)) {
-                    console.log(`Message ${data.id} déjà traité, ignoré`);
+            
+            // Vérifier si c'est un message normal
+            if (data.type === 'message') {
+                console.log('Message normal reçu via Mercure');
+                const messageData = data.message;
+                
+                // NOUVEAU: Vérifier si le message est déjà dans la liste des messages
+                if (messageData.id && this.messages.has(messageData.id)) {
+                    console.log(`Message ${messageData.id} déjà dans la liste, vérification de mise à jour`);
+                    
+                    // Comparer les timestamps pour voir si le message Mercure est plus récent
+                    const existingMessage = this.messages.get(messageData.id);
+                    if (new Date(messageData.updatedAt) > new Date(existingMessage.updatedAt)) {
+                        console.log('Message Mercure plus récent, mise à jour');
+                        this.addMessage(messageData, true);
+                    } else {
+                        console.log('Message existant plus récent, ignoré');
+                    }
                     return;
                 }
                 
-                this.processedMessageIds.add(data.id);
-                
-                // Mettre à jour le dernier ID de message
-                this.lastMessageId = data.id;
-                
-                // Ajouter le message à l'interface
-                this.addMessageToUI(data);
+                // Si c'est un message IA, vérifier s'il a un userMessageId
+                if (messageData.messageType === 'ai') {
+                    console.log('Message IA reçu via Mercure');
+                    
+                    // Vérifier si le message IA a un userMessageId
+                    if (messageData.userMessageId) {
+                        console.log(`Message IA avec userMessageId: ${messageData.userMessageId}`);
+                        
+                        // Vérifier si le message utilisateur correspondant existe déjà
+                        if (this.messageElements.has(messageData.userMessageId)) {
+                            console.log('Message utilisateur correspondant trouvé, ajout du message IA');
+                            this.addMessage(messageData, true);
+                        } else {
+                            // Si le message utilisateur n'existe pas encore, vérifier s'il y a un message temporaire
+                            const tempId = `temp-${messageData.userMessageId}`;
+                            if (this.messageElements.has(tempId)) {
+                                console.log(`Message utilisateur temporaire trouvé (${tempId}), transfert du message IA`);
+                                
+                                // Transférer le message IA vers le message temporaire
+                                const pendingMessages = this.pendingAIMessagesByTempUserMessage.get(tempId) || [];
+                                pendingMessages.push(messageData);
+                                this.pendingAIMessagesByTempUserMessage.set(tempId, pendingMessages);
+                                
+                                // Définir un timeout pour éviter que le message ne reste bloqué indéfiniment
+                                this.setPendingMessageTimeout(messageData, tempId);
+                            } else {
+                                console.log(`Aucun message utilisateur trouvé pour ${messageData.userMessageId}, mise en attente du message IA`);
+                                
+                                // Mettre le message IA en attente
+                                const pendingMessages = this.pendingAIMessagesByUserMessage.get(messageData.userMessageId) || [];
+                                pendingMessages.push(messageData);
+                                this.pendingAIMessagesByUserMessage.set(messageData.userMessageId, pendingMessages);
+                                
+                                // Définir un timeout pour éviter que le message ne reste bloqué indéfiniment
+                                this.setPendingMessageTimeout(messageData, messageData.userMessageId);
+                            }
+                        }
+                    } else if (this.lastUserMessageId) {
+                        // Si le message IA n'a pas de userMessageId mais qu'on a un dernier message utilisateur,
+                        // on l'associe à ce dernier message utilisateur
+                        console.log(`Message IA sans userMessageId, association au dernier message utilisateur: ${this.lastUserMessageId}`);
+                        messageData.userMessageId = this.lastUserMessageId;
+                        this.addMessage(messageData, true);
+                    } else {
+                        // Si on n'a pas de dernier message utilisateur, on ajoute simplement le message IA
+                        console.log('Message IA sans userMessageId et pas de dernier message utilisateur, ajout simple');
+                        this.addMessage(messageData, true);
+                    }
+                } else {
+                    // Pour les autres types de messages, ajouter normalement
+                    console.log('Message non-IA reçu via Mercure, ajout normal');
+                    this.addMessage(messageData, true);
+                }
             }
-        } else {
-            console.log(`Type de message inconnu: ${data.type}`, data);
+        } catch (error) {
+            console.error('Erreur lors du traitement du message Mercure:', error);
         }
     }
     
+    // Fonction utilitaire pour obtenir le timestamp d'un message
+    getMessageTimestamp(messageId) {
+        const message = this.messages.get(messageId);
+        if (message && message.timestamp) {
+            return new Date(message.timestamp);
+        }
+        
+        // Essayer de trouver le message dans le DOM
+        const element = this.messageElements.get(messageId);
+        if (element) {
+            const timestamp = element.attr('data-timestamp');
+            if (timestamp) {
+                return new Date(timestamp);
+            }
+        }
+        
+        return null;
+    }
+
+    addMessageToUI(data) {
+        console.log('Ajout du message à l\'interface UI:', data);
+        
+        // Mettre à jour le dernier ID de message
+        if (data.id && (!this.lastMessageId || parseInt(data.id) > parseInt(this.lastMessageId))) {
+            this.lastMessageId = data.id;
+            console.log(`Mise à jour du dernier ID de message: ${this.lastMessageId}`);
+        }
+        
+        // Ajouter le message à l'interface
+        this.addMessage(data, true);
+        
+        // Marquer la conversation comme non lue si nécessaire
+        if (data.messageType === 'ai' && !this.isActive) {
+            console.log('Marquage de la conversation comme non lue (message IA reçu pendant inactivité)');
+            this.markConversationAsUnread();
+        }
+        
+        // Défiler vers le bas
+        console.log('Défilement vers le bas après ajout du message');
+        this.scrollToBottom();
+    }
+
     handleTypingEvent(data) {
         const userId = data.userId;
         const isTyping = data.isTyping;
@@ -494,6 +549,7 @@ class Chat {
             
             if (Array.isArray(data.messages)) {
                 this.messageContainer.empty();
+                data.messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 data.messages.forEach(message => {
                     this.addMessage(message, false);
                 });
@@ -508,139 +564,590 @@ class Chat {
         }
     }
 
-    addMessageToUI(messageData) {
-        console.log('Ajout du message à l\'interface:', messageData);
+    loadInitialMessages() {
+        console.log('Chargement des messages initiaux');
         
-        // Ajouter le message à l'interface
-        this.addMessage(messageData, true);
+        if (this.isLoading) {
+            console.log('Chargement déjà en cours, annulation');
+            return;
+        }
         
-        // Défiler vers le bas
-        this.scrollToBottom();
+        this.isLoading = true;
+        
+        // Afficher un indicateur de chargement
+        const loadingIndicator = $('<div class="text-center my-3"><div class="spinner-border text-primary" role="status"><span class="sr-only">Chargement...</span></div></div>');
+        this.messageContainer.prepend(loadingIndicator);
+        
+        // Charger les messages depuis le serveur
+        $.ajax({
+            url: this.config.loadMessagesUrl,
+            method: 'GET',
+            data: {
+                conversationId: this.config.conversationId,
+                page: this.currentPage
+            },
+            success: (response) => {
+                console.log('Messages initiaux chargés:', response);
+                
+                // Supprimer l'indicateur de chargement
+                loadingIndicator.remove();
+                
+                if (response.success) {
+                    // Ajouter les messages à l'interface
+                    const messages = response.messages;
+                    
+                    if (messages.length === 0) {
+                        console.log('Aucun message à charger');
+                        this.hasMoreMessages = false;
+                    } else {
+                        console.log(`${messages.length} messages chargés`);
+                        
+                        // Trier les messages par date de création
+                        messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                        
+                        // Ajouter les messages à l'interface
+                        messages.forEach(message => {
+                            this.addMessage(message);
+                        });
+                        
+                        // Mettre à jour l'ID du dernier message utilisateur
+                        const userMessages = messages.filter(msg => msg.messageType === 'user');
+                        if (userMessages.length > 0) {
+                            this.lastUserMessageId = userMessages[userMessages.length - 1].id;
+                            console.log(`ID du dernier message utilisateur mis à jour: ${this.lastUserMessageId}`);
+                        }
+                        
+                        // Défiler vers le bas
+                        this.scrollToBottom();
+                    }
+                } else {
+                    console.error('Erreur lors du chargement des messages:', response.error);
+                    this.showErrorMessage('Erreur lors du chargement des messages: ' + response.error);
+                }
+                
+                this.isLoading = false;
+            },
+            error: (xhr, status, error) => {
+                console.error('Erreur AJAX lors du chargement des messages:', error);
+                
+                // Supprimer l'indicateur de chargement
+                loadingIndicator.remove();
+                
+                // Afficher un message d'erreur
+                this.showErrorMessage('Erreur lors du chargement des messages: ' + error);
+                
+                this.isLoading = false;
+            }
+        });
+    }
+
+    loadMoreMessages() {
+        console.log('Chargement de messages supplémentaires');
+        
+        if (this.isLoading || !this.hasMoreMessages) {
+            console.log('Chargement déjà en cours ou plus de messages à charger, annulation');
+            return;
+        }
+        
+        this.isLoading = true;
+        
+        // Afficher un indicateur de chargement
+        const loadingIndicator = $('<div class="text-center my-3"><div class="spinner-border text-primary" role="status"><span class="sr-only">Chargement...</span></div></div>');
+        this.messageContainer.prepend(loadingIndicator);
+        
+        // Incrémenter le numéro de page
+        this.currentPage++;
+        
+        // Charger les messages depuis le serveur
+        $.ajax({
+            url: this.config.loadMessagesUrl,
+            method: 'GET',
+            data: {
+                conversationId: this.config.conversationId,
+                page: this.currentPage
+            },
+            success: (response) => {
+                console.log('Messages supplémentaires chargés:', response);
+                
+                // Supprimer l'indicateur de chargement
+                loadingIndicator.remove();
+                
+                if (response.success) {
+                    // Ajouter les messages à l'interface
+                    const messages = response.messages;
+                    
+                    if (messages.length === 0) {
+                        console.log('Aucun message supplémentaire à charger');
+                        this.hasMoreMessages = false;
+                    } else {
+                        console.log(`${messages.length} messages supplémentaires chargés`);
+                        
+                        // Trier les messages par date de création
+                        messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                        
+                        // Sauvegarder la position de défilement actuelle
+                        const firstMessage = this.messageContainer.children('.message').first();
+                        const firstMessageOffset = firstMessage.length ? firstMessage.offset().top : 0;
+                        
+                        // Ajouter les messages à l'interface
+                        messages.forEach(message => {
+                            // Créer l'élément de message
+                            const messageElement = this.createMessageElement(message);
+                            
+                            // Ajouter l'élément au début du conteneur
+                            this.messageContainer.prepend(messageElement);
+                            
+                            // Ajouter à la Map des éléments de message
+                            if (message.id) {
+                                this.messageElements.set(message.id, messageElement);
+                            }
+                            
+                            // Ajouter le message à la Map des messages
+                            if (message.id) {
+                                this.messages.set(message.id, message);
+                            }
+                        });
+                        
+                        // Restaurer la position de défilement
+                        if (firstMessage.length) {
+                            const newOffset = firstMessage.offset().top;
+                            const scrollDiff = newOffset - firstMessageOffset;
+                            this.messageContainer.scrollTop(this.messageContainer.scrollTop() + scrollDiff);
+                        }
+                    }
+                } else {
+                    console.error('Erreur lors du chargement des messages supplémentaires:', response.error);
+                    this.showErrorMessage('Erreur lors du chargement des messages: ' + response.error);
+                }
+                
+                this.isLoading = false;
+            },
+            error: (xhr, status, error) => {
+                console.error('Erreur AJAX lors du chargement des messages supplémentaires:', error);
+                
+                // Supprimer l'indicateur de chargement
+                loadingIndicator.remove();
+                
+                // Afficher un message d'erreur
+                this.showErrorMessage('Erreur lors du chargement des messages: ' + error);
+                
+                this.isLoading = false;
+            }
+        });
     }
 
     addMessage(messageData, fromMercure = false) {
         console.log('=== Ajout d\'un message ===');
         console.log('Message data:', messageData);
         console.log('From Mercure:', fromMercure);
-        
-        if (!messageData || !messageData.id) {
-            console.error('Données de message invalides:', messageData);
-            return;
+
+        // Ajouter le message à la Map des messages
+        if (messageData.id) {
+            this.messages.set(messageData.id, messageData);
         }
 
-        // Si le message existe déjà, le mettre à jour
-        const existingElement = $(`[data-message-id="${messageData.id}"]`);
-        if (existingElement.length) {
+        // Vérifier si l'élément existe déjà (pour éviter les doublons)
+        if (messageData.id && this.messageElements.has(messageData.id)) {
+            console.log(`Message ${messageData.id} déjà affiché, mise à jour si nécessaire`);
+            
+            // NOUVEAU: Si le message existe déjà mais qu'il vient de Mercure, ne pas le mettre à jour
+            // car la version HTTP est plus complète
+            if (fromMercure) {
+                console.log(`Message ${messageData.id} reçu via Mercure mais déjà affiché, ignoré`);
+                return this.messageElements.get(messageData.id);
+            }
+            
             console.log('Message existant trouvé, mise à jour...');
             
-            // Pour les messages IA, toujours forcer la mise à jour
-            if (messageData.messageType === 'ai' && fromMercure) {
-                console.log('Mise à jour forcée du message IA existant');
-                const messageContent = existingElement.find('.message-content');
-                messageContent.html(this.escapeHtml(messageData.content));
-                
-                // Mettre à jour les données du message
-                this.messages.set(messageData.id, messageData);
-            } else {
-                const newElement = this.createMessageElement(messageData);
-                existingElement.replaceWith(newElement);
-                this.messages.set(messageData.id, newElement);
+            // Mettre à jour le contenu du message existant
+            const existingElement = this.messageElements.get(messageData.id);
+            const contentElement = existingElement.find('.message-content');
+            if (contentElement.length > 0) {
+                contentElement.html(this.formatMessageContent(messageData.content));
+            }
+            
+            // Mettre à jour les réactions si présentes
+            if (messageData.reactions) {
+                this.updateMessageReactions(messageData.id, messageData.reactions);
+            }
+            
+            // Mettre à jour le statut de lecture si présent
+            if (messageData.isRead !== undefined) {
+                this.updateMessageReadStatus(messageData.id, messageData.isRead);
             }
             
             console.log('Message mis à jour avec succès');
             return existingElement;
         }
 
-        console.log('Création d\'un nouveau message...');
-        const messageElement = this.createMessageElement(messageData);
-        
-        // Ajouter le message au conteneur
-        if (messageData.senderId === this.config.userId) {
-            console.log('Message envoyé par l\'utilisateur actuel');
-            messageElement.addClass('message-sent');
-        } else {
-            console.log('Message reçu d\'un autre utilisateur');
-            messageElement.addClass('message-received');
-        }
-        
-        this.messageContainer.append(messageElement);
-        this.messages.set(messageData.id, messageElement);
-        this.scrollToBottom();
-        
-        // Si le message vient de Mercure et n'est pas de l'utilisateur actuel, marquer comme non lu
-        if (fromMercure && messageData.senderId !== this.config.userId) {
-            console.log('Marquage du message comme non lu');
-            this.markMessageAsUnread(messageData.id);
+        // Vérifier si c'est un message temporaire qui est remplacé par un message réel
+        if (fromMercure && messageData.id && String(messageData.id).indexOf('temp-') === 0) {
+            // Chercher un message temporaire de même contenu
+            const tempElements = Array.from(document.querySelectorAll('.message'))
+                .filter(el => el.getAttribute('data-message-id').indexOf('temp-') === 0);
+            
+            for (const tempEl of tempElements) {
+                const tempContent = tempEl.querySelector('.message-content').textContent.trim();
+                if (tempContent === messageData.content.trim()) {
+                    console.log('Message temporaire trouvé et remplacé par le message réel');
+                    // Supprimer l'élément temporaire
+                    tempEl.remove();
+                    break;
+                }
+            }
         }
 
-        console.log('=== Fin de l\'ajout du message ===');
+        console.log('Création d\'un nouveau message...');
+        
+        // Créer l'élément de message
+        const messageElement = this.createMessageElement(messageData);
+        
+        // MODIFIÉ: Amélioration de la logique d'insertion pour les messages IA
+        // Si c'est un message IA avec un userMessageId, s'assurer qu'il est placé après le message utilisateur
+        if (messageData.messageType === 'ai' && messageData.userMessageId) {
+            const userMessageElement = this.messageElements.get(messageData.userMessageId);
+            if (userMessageElement) {
+                console.log(`Insertion du message IA après le message utilisateur ${messageData.userMessageId}`);
+                $(userMessageElement).after(messageElement);
+            } else {
+                // NOUVEAU: Si le message utilisateur n'est pas trouvé, mettre le message IA en attente
+                console.log(`Message utilisateur ${messageData.userMessageId} non trouvé, mise en attente du message IA`);
+                const pendingMessages = this.pendingAIMessagesByUserMessage.get(messageData.userMessageId) || [];
+                pendingMessages.push(messageData);
+                this.pendingAIMessagesByUserMessage.set(messageData.userMessageId, pendingMessages);
+                
+                // Ne pas ajouter le message IA à l'interface pour l'instant
+                return null;
+            }
+        } else {
+            // Pour les autres types de messages, utiliser la logique standard
+            this.insertMessageByTimestamp(messageElement, messageData);
+        }
+        
+        // Ajouter à la Map des éléments de message
+        if (messageData.id) {
+            this.messageElements.set(messageData.id, messageElement);
+            
+            // Si c'est un message utilisateur, vérifier s'il y a des messages IA en attente pour ce message
+            if (messageData.messageType === 'user') {
+                // Enregistrer l'ID du dernier message utilisateur
+                this.lastUserMessageId = messageData.id;
+                console.log(`ID du dernier message utilisateur mis à jour: ${this.lastUserMessageId}`);
+                
+                // Vérifier s'il y a des messages IA en attente pour ce message utilisateur spécifique
+                const pendingAIMessages = this.pendingAIMessagesByUserMessage.get(messageData.id);
+                if (pendingAIMessages && pendingAIMessages.length > 0) {
+                    console.log(`Traitement de ${pendingAIMessages.length} messages IA en attente pour le message utilisateur ${messageData.id}`);
+                    
+                    // NOUVEAU: Copier les messages en attente pour éviter les problèmes de modification pendant l'itération
+                    const messagesToProcess = [...pendingAIMessages];
+                    // Vider la liste des messages en attente
+                    this.pendingAIMessagesByUserMessage.set(messageData.id, []);
+                    
+                    // Attendre un court instant pour s'assurer que le message utilisateur est bien affiché
+                    setTimeout(() => {
+                        messagesToProcess.forEach(msg => {
+                            console.log('Ajout d\'un message IA en attente:', msg);
+                            // Utiliser addMessage directement pour bénéficier de la logique d'insertion après le message utilisateur
+                            this.addMessage(msg, true);
+                        });
+                    }, 100);
+                }
+            }
+        }
+        
+        // Si c'est un message de l'utilisateur actuel, défiler vers le bas
+        if (messageData.senderId === this.config.userId) {
+            console.log('Message envoyé par l\'utilisateur actuel');
+            this.scrollToBottom();
+        } else {
+            console.log('Message reçu d\'un autre utilisateur');
+            // Défiler vers le bas uniquement si l'utilisateur était déjà en bas
+            if (this.isScrolledToBottom()) {
+                this.scrollToBottom();
+            }
+        }
+        
         return messageElement;
+    }
+    
+    // NOUVELLE MÉTHODE: Extraire la logique d'insertion par timestamp dans une méthode séparée
+    insertMessageByTimestamp(messageElement, messageData) {
+        console.log('Insertion du message par timestamp');
+        
+        // Obtenir le timestamp du message
+        const messageTimestamp = new Date(messageData.timestamp || messageData.createdAt);
+        
+        // Parcourir tous les messages existants pour trouver la bonne position
+        let inserted = false;
+        const messages = this.messageContainer.children('.message');
+        
+        if (messages.length === 0) {
+            // Si le conteneur est vide, ajouter simplement le message
+            console.log('Conteneur vide, ajout du message');
+            this.messageContainer.append(messageElement);
+            return;
+        }
+        
+        // Parcourir les messages du plus récent au plus ancien
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const existingMessage = messages.eq(i);
+            const existingTimestamp = new Date(existingMessage.attr('data-timestamp'));
+            
+            // Si le message existant est plus ancien que le nouveau message, insérer après
+            if (messageTimestamp > existingTimestamp) {
+                console.log(`Message inséré après le message ${existingMessage.attr('data-message-id')}`);
+                existingMessage.after(messageElement);
+                inserted = true;
+                break;
+            }
+        }
+        
+        // Si aucune position n'a été trouvée, ajouter au début
+        if (!inserted) {
+            console.log('Message inséré au début');
+            this.messageContainer.prepend(messageElement);
+        }
+    }
+    
+    // NOUVELLE MÉTHODE: Vérifier si l'utilisateur est défilé jusqu'en bas
+    isScrolledToBottom() {
+        const container = this.messageContainer[0];
+        return container.scrollHeight - container.clientHeight <= container.scrollTop + 50; // 50px de marge
     }
 
     createMessageElement(messageData) {
         console.log('Creating message element:', messageData);
         
-        const isSentByMe = messageData.senderId === this.config.userId;
-        const messageElement = $('<div>')
-            .addClass(`message ${isSentByMe ? 'sent' : 'received'}`)
-            .toggleClass('ai', messageData.messageType === 'ai')
-            .attr('data-message-id', messageData.id);
-
-        const timestamp = new Date(messageData.timestamp);
-        const timeString = timestamp.toLocaleTimeString();
-
-        messageElement.html(`
-            <div class="message-content">${this.escapeHtml(messageData.content)}</div>
-            <div class="message-meta">
-                <small class="text-muted">${timeString}</small>
-                ${messageData.isRead ? '<span class="read-status"><i class="fas fa-check"></i></span>' : ''}
-            </div>
-            <div class="reactions" data-message-id="${messageData.id}">
-                ${this.renderReactions(messageData.reactions)}
-            </div>
-        `);
-
+        // Déterminer si le message est de l'utilisateur actuel
+        const isCurrentUser = messageData.senderId === this.config.userId;
+        
+        // Créer l'élément de message
+        const messageElement = $('<div class="message"></div>');
+        
+        // Ajouter les attributs de données
+        messageElement.attr('data-message-id', messageData.id);
+        messageElement.attr('data-sender-id', messageData.senderId);
+        messageElement.attr('data-timestamp', messageData.timestamp || messageData.createdAt);
+        
+        // Ajouter les classes en fonction du type de message
+        if (messageData.messageType === 'user') {
+            messageElement.addClass('user-message');
+        } else if (messageData.messageType === 'ai') {
+            messageElement.addClass('ai-message');
+        } else if (messageData.messageType === 'system') {
+            messageElement.addClass('system-message');
+        }
+        
+        // Ajouter la classe pour l'utilisateur actuel
+        if (isCurrentUser) {
+            messageElement.addClass('current-user');
+        }
+        
+        // Créer l'en-tête du message
+        const messageHeader = $('<div class="message-header"></div>');
+        
+        // Ajouter l'avatar
+        if (messageData.senderAvatar) {
+            const avatarElement = $('<div class="message-avatar"></div>');
+            const avatarImage = $('<img>');
+            avatarImage.attr('src', messageData.senderAvatar);
+            avatarImage.attr('alt', messageData.senderName || 'Avatar');
+            avatarElement.append(avatarImage);
+            messageHeader.append(avatarElement);
+        }
+        
+        // Ajouter le nom de l'expéditeur
+        if (messageData.senderName) {
+            const senderNameElement = $('<div class="message-sender-name"></div>');
+            senderNameElement.text(messageData.senderName);
+            messageHeader.append(senderNameElement);
+        }
+        
+        // Ajouter l'horodatage
+        const timestampElement = $('<div class="message-timestamp"></div>');
+        const timestamp = new Date(messageData.timestamp || messageData.createdAt);
+        timestampElement.text(this.formatTimestamp(timestamp));
+        messageHeader.append(timestampElement);
+        
+        // Ajouter l'en-tête au message
+        messageElement.append(messageHeader);
+        
+        // Créer le contenu du message
+        const contentElement = $('<div class="message-content"></div>');
+        contentElement.html(this.formatMessageContent(messageData.content));
+        messageElement.append(contentElement);
+        
+        // Créer le pied de page du message
+        const messageFooter = $('<div class="message-footer"></div>');
+        
+        // Ajouter le statut de lecture
+        if (messageData.isRead !== undefined) {
+            const readStatusElement = $('<div class="message-read-status"></div>');
+            if (messageData.isRead) {
+                readStatusElement.addClass('read');
+                readStatusElement.html('<i class="fas fa-check-double"></i>');
+            } else {
+                readStatusElement.addClass('unread');
+                readStatusElement.html('<i class="fas fa-check"></i>');
+            }
+            messageFooter.append(readStatusElement);
+        }
+        
+        // Ajouter les réactions
+        if (messageData.reactions && messageData.reactions.length > 0) {
+            const reactionsElement = $('<div class="message-reactions"></div>');
+            messageData.reactions.forEach(reaction => {
+                const reactionElement = $('<span class="reaction"></span>');
+                reactionElement.text(reaction.emoji);
+                reactionElement.attr('data-reaction-id', reaction.id);
+                reactionElement.attr('data-user-id', reaction.userId);
+                reactionsElement.append(reactionElement);
+            });
+            messageFooter.append(reactionsElement);
+        }
+        
+        // Ajouter le pied de page au message
+        messageElement.append(messageFooter);
+        
         return messageElement;
     }
 
-    updateMessageReactions(messageId, reactions) {
-        const messageElement = this.messages.get(messageId);
-        if (messageElement) {
-            messageElement.find('.reactions').html(this.renderReactions(reactions));
-        }
-    }
-
-    updateMessageReadStatus(messageId, isRead) {
-        const messageElement = this.messages.get(messageId);
-        if (messageElement) {
-            messageElement.toggleClass('read', isRead);
-        }
-    }
-
-    renderReactions(reactions) {
-        if (!reactions || Object.keys(reactions).length === 0) {
+    formatMessageContent(content) {
+        if (!content) {
             return '';
         }
-
-        return Object.entries(reactions)
-            .map(([emoji, count]) => `
-                <span class="reaction" data-emoji="${emoji}">
-                    ${emoji} <span class="count">${count}</span>
-                </span>
-            `).join('');
+        
+        // Convertir les URL en liens cliquables
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        let formattedContent = content.replace(urlRegex, url => {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        });
+        
+        // Convertir les sauts de ligne en balises <br>
+        formattedContent = formattedContent.replace(/\n/g, '<br>');
+        
+        // Convertir les mentions @utilisateur en liens
+        const mentionRegex = /@(\w+)/g;
+        formattedContent = formattedContent.replace(mentionRegex, (match, username) => {
+            return `<span class="mention">@${username}</span>`;
+        });
+        
+        // Convertir les hashtags en liens
+        const hashtagRegex = /#(\w+)/g;
+        formattedContent = formattedContent.replace(hashtagRegex, (match, hashtag) => {
+            return `<span class="hashtag">#${hashtag}</span>`;
+        });
+        
+        // Convertir les emojis (si nécessaire)
+        // Note: les navigateurs modernes prennent en charge les emojis Unicode nativement
+        
+        return formattedContent;
+    }
+    
+    formatTimestamp(timestamp) {
+        if (!timestamp) {
+            return '';
+        }
+        
+        // Convertir en objet Date si c'est une chaîne
+        const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+        
+        // Vérifier si la date est valide
+        if (isNaN(date.getTime())) {
+            console.error('Date invalide:', timestamp);
+            return '';
+        }
+        
+        // Obtenir la date actuelle
+        const now = new Date();
+        
+        // Calculer la différence en jours
+        const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+        
+        // Options de formatage pour différents cas
+        if (diffDays === 0) {
+            // Aujourd'hui: afficher l'heure
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (diffDays === 1) {
+            // Hier: afficher "Hier" et l'heure
+            return `Hier ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        } else if (diffDays < 7) {
+            // Cette semaine: afficher le jour de la semaine et l'heure
+            const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+            return `${days[date.getDay()]} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        } else {
+            // Plus d'une semaine: afficher la date complète
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+    }
+    
+    createReactionsElement(reactions) {
+        const reactionsElement = $('<div class="message-reactions"></div>');
+        
+        Object.entries(reactions).forEach(([emoji, count]) => {
+            const reactionElement = $('<span class="reaction"></span>');
+            reactionElement.text(`${emoji} <span class="reaction-count">${count}</span>`);
+            reactionsElement.append(reactionElement);
+        });
+        
+        return reactionsElement;
+    }
+    
+    updateMessageReactions(messageId, reactions) {
+        console.log(`Mise à jour des réactions pour le message ${messageId}:`, reactions);
+        
+        const messageElement = this.messageElements.get(messageId);
+        if (!messageElement) {
+            console.warn(`Message ${messageId} non trouvé pour la mise à jour des réactions`);
+            return;
+        }
+        
+        // Supprimer les réactions existantes
+        messageElement.find('.message-reactions').remove();
+        
+        // Ajouter les nouvelles réactions
+        if (reactions && Object.keys(reactions).length > 0) {
+            const reactionsElement = this.createReactionsElement(reactions);
+            messageElement.append(reactionsElement);
+        }
+    }
+    
+    updateMessageReadStatus(messageId, isRead) {
+        console.log(`Mise à jour du statut de lecture pour le message ${messageId}: ${isRead}`);
+        
+        const messageElement = this.messageElements.get(messageId);
+        if (!messageElement) {
+            console.warn(`Message ${messageId} non trouvé pour la mise à jour du statut de lecture`);
+            return;
+        }
+        
+        const readStatusElement = messageElement.find('.message-read-status');
+        if (readStatusElement.length > 0) {
+            if (isRead) {
+                readStatusElement.addClass('read').html('<i class="fas fa-check-double"></i>');
+            } else {
+                readStatusElement.removeClass('read').html('<i class="fas fa-check"></i>');
+            }
+        }
+        
+        // Mettre à jour l'objet message dans la Map
+        const message = this.messages.get(messageId);
+        if (message) {
+            message.isRead = isRead;
+        }
+    }
+    
+    escapeHtml(text) {
+        if (!text) return '';
+        
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     scrollToBottom() {
         this.messageContainer[0].scrollTop = this.messageContainer[0].scrollHeight;
-    }
-
-    escapeHtml(unsafe) {
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
     }
 
     sendTypingStatus() {
@@ -651,6 +1158,12 @@ class Chat {
         }
         
         this.lastTypingUpdate = now;
+        
+        // Vérifier que la route typing est définie
+        if (!this.config.routes.typing) {
+            console.warn('Route typing non configurée, impossible d\'envoyer le statut de frappe');
+            return;
+        }
         
         fetch(this.config.routes.typing, {
             method: 'POST',
@@ -677,6 +1190,12 @@ class Chat {
         }
         
         this.typingTimeout = setTimeout(() => {
+            // Vérifier que la route typing est définie
+            if (!this.config.routes.typing) {
+                console.warn('Route typing non configurée, impossible d\'annuler le statut de frappe');
+                return;
+            }
+            
             fetch(this.config.routes.typing, {
                 method: 'POST',
                 headers: {
@@ -697,6 +1216,12 @@ class Chat {
         this.lastTypingUpdate = now;
         
         if (isTyping) {
+            // Vérifier que la route typing est définie
+            if (!this.config.routes.typing) {
+                console.warn('Route typing non configurée, impossible de gérer le statut de frappe');
+                return;
+            }
+            
             this.sendTypingStatus();
         }
     }
@@ -744,5 +1269,145 @@ class Chat {
         });
         
         this.emojiPicker.empty().append(emojiGrid);
+    }
+
+    disableSendButton() {
+        const sendButton = this.sendButton;
+        sendButton.prop('disabled', true);
+        sendButton.addClass('disabled');
+    }
+    
+    enableSendButton() {
+        const sendButton = this.sendButton;
+        sendButton.prop('disabled', false);
+        sendButton.removeClass('disabled');
+    }
+    
+    showErrorMessage(message) {
+        console.error('Erreur:', message);
+        
+        // Créer un élément d'alerte
+        const alertElement = $('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>');
+        alertElement.text(message);
+        
+        // Ajouter un bouton de fermeture
+        const closeButton = $('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>');
+        alertElement.append(closeButton);
+        
+        // Ajouter l'alerte au conteneur de messages
+        this.messageContainer.append(alertElement);
+        
+        // Défiler vers le bas pour montrer l'alerte
+        this.scrollToBottom();
+        
+        // Supprimer l'alerte après 5 secondes
+        setTimeout(() => {
+            alertElement.alert('close');
+        }, 5000);
+    }
+    
+    resetInputHeight() {
+        this.messageInput.css('height', 'auto');
+    }
+
+    deleteMessage(messageId) {
+        console.log(`Suppression du message ${messageId}`);
+        
+        // Vérifier si le message existe
+        if (!this.messageElements.has(messageId)) {
+            console.log(`Message ${messageId} non trouvé, impossible de le supprimer`);
+            return false;
+        }
+        
+        // Récupérer l'élément du message
+        const messageElement = this.messageElements.get(messageId);
+        
+        // Supprimer l'élément du DOM
+        $(messageElement).fadeOut(300, function() {
+            $(this).remove();
+        });
+        
+        // Supprimer le message des Maps
+        this.messageElements.delete(messageId);
+        this.messages.delete(messageId);
+        
+        console.log(`Message ${messageId} supprimé avec succès`);
+        return true;
+    }
+
+    setPendingMessageTimeout(messageData, userMessageId, timeout = 5000) {
+        console.log(`Définition d'un timeout de ${timeout}ms pour le message IA en attente du message utilisateur ${userMessageId}`);
+        
+        // Créer un identifiant unique pour ce timeout
+        const timeoutId = `timeout-${messageData.id || Math.random().toString(36).substring(2, 15)}`;
+        
+        // Enregistrer le timeout
+        this.pendingMessageTimeouts.set(timeoutId, setTimeout(() => {
+            console.log(`Timeout expiré pour le message IA en attente du message utilisateur ${userMessageId}`);
+            
+            // Vérifier si le message utilisateur est arrivé entre-temps
+            if (this.messageElements.has(userMessageId)) {
+                console.log(`Message utilisateur ${userMessageId} arrivé entre-temps, traitement normal`);
+                return;
+            }
+            
+            // Si le message utilisateur n'est toujours pas arrivé, afficher le message IA quand même
+            console.log(`Message utilisateur ${userMessageId} toujours absent après ${timeout}ms, affichage forcé du message IA`);
+            
+            // Récupérer le message IA en attente
+            let pendingMessages;
+            if (userMessageId.startsWith('temp-')) {
+                pendingMessages = this.pendingAIMessagesByTempUserMessage.get(userMessageId) || [];
+                this.pendingAIMessagesByTempUserMessage.delete(userMessageId);
+            } else {
+                pendingMessages = this.pendingAIMessagesByUserMessage.get(userMessageId) || [];
+                this.pendingAIMessagesByUserMessage.delete(userMessageId);
+            }
+            
+            // Afficher tous les messages IA en attente
+            pendingMessages.forEach(msg => {
+                console.log('Affichage forcé du message IA:', msg);
+                
+                // Associer le message IA au dernier message utilisateur connu, s'il existe
+                if (this.lastUserMessageId) {
+                    console.log(`Association forcée du message IA au dernier message utilisateur connu: ${this.lastUserMessageId}`);
+                    msg.userMessageId = this.lastUserMessageId;
+                }
+                
+                // Ajouter le message IA à l'interface
+                this.addMessage(msg, true);
+            });
+            
+            // Supprimer le timeout
+            this.pendingMessageTimeouts.delete(timeoutId);
+        }, timeout));
+    }
+
+    processPendingAIMessages(userMessageId) {
+        console.log(`Traitement des messages IA en attente pour le message utilisateur ${userMessageId}`);
+        
+        // Récupérer les messages IA en attente pour ce message utilisateur
+        const pendingMessages = this.pendingAIMessagesByUserMessage.get(userMessageId);
+        if (!pendingMessages || pendingMessages.length === 0) {
+            console.log(`Aucun message IA en attente pour le message utilisateur ${userMessageId}`);
+            return;
+        }
+        
+        console.log(`${pendingMessages.length} messages IA en attente trouvés pour le message utilisateur ${userMessageId}`);
+        
+        // Copier les messages en attente pour éviter les problèmes de modification pendant l'itération
+        const messagesToProcess = [...pendingMessages];
+        
+        // Vider la liste des messages en attente
+        this.pendingAIMessagesByUserMessage.set(userMessageId, []);
+        
+        // Attendre un court instant pour s'assurer que le message utilisateur est bien affiché
+        setTimeout(() => {
+            messagesToProcess.forEach(msg => {
+                console.log('Traitement du message IA en attente:', msg);
+                // Ajouter le message IA à l'interface
+                this.addMessage(msg, true);
+            });
+        }, 100);
     }
 }

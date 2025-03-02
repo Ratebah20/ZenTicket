@@ -6,24 +6,41 @@ use App\Repository\AdministrateurRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
+/**
+ * Entité représentant un administrateur du système
+ * 
+ * Cette classe étend l'entité Personne pour ajouter des fonctionnalités
+ * spécifiques aux administrateurs qui gèrent le système.
+ */
 #[ORM\Entity(repositoryClass: AdministrateurRepository::class)]
 class Administrateur extends Personne implements PasswordAuthenticatedUserInterface, UserInterface
 {
     /**
+     * Collection des catégories créées par cet administrateur
+     * 
      * @var Collection<int, Categorie>
      */
     #[ORM\OneToMany(targetEntity: Categorie::class, mappedBy: 'administrateur')]
+    #[Groups(['administrateur:item:read'])]
     private Collection $categories;
 
+    /**
+     * Rapport associé à cet administrateur
+     */
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[Groups(['administrateur:read', 'administrateur:write'])]
     private ?Rapport $rapport = null;
 
     public function __construct()
     {
+        parent::__construct();
         $this->categories = new ArrayCollection();
+        $this->addRole('ROLE_ADMIN');
     }
 
     /**
@@ -68,7 +85,7 @@ class Administrateur extends Personne implements PasswordAuthenticatedUserInterf
         return $this;
     }
 
-     /**
+    /**
      * Crée une nouvelle catégorie et l'ajoute à l'administrateur.
      */
     public function creerCategorie(string $nom): void
@@ -78,7 +95,7 @@ class Administrateur extends Personne implements PasswordAuthenticatedUserInterf
         $this->addCategory($categorie);
     }
 
-     /**
+    /**
      * Modifie une catégorie donnée.
      */
     public function modifierCategorie(Categorie $categorie, string $nouveauNom): void
@@ -112,9 +129,11 @@ class Administrateur extends Personne implements PasswordAuthenticatedUserInterf
      */
     public function getRoles(): array
     {
-        $roles = $this->roles;
+        $roles = parent::getRoles();
         // Garantir que ROLE_ADMIN est toujours présent
-        $roles[] = 'ROLE_ADMIN';
+        if (!in_array('ROLE_ADMIN', $roles)) {
+            $roles[] = 'ROLE_ADMIN';
+        }
         return array_unique($roles);
     }
 

@@ -3,5 +3,15 @@ controllers:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
+
 # Supprimez toute référence à api_platform si elle existe
 
+# Assurez-vous que la documentation API est accessible
+api_doc:
+    path: /api/doc
+    controller: api_platform.swagger_ui.action
+    methods: GET
+
+api_login_check:
+    path: /api/login_check
+    methods: ['POST']

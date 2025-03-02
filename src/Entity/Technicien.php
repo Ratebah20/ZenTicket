@@ -11,8 +11,14 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
+/**
+ * Entité représentant un technicien du support
+ * 
+ * Cette classe étend l'entité Personne pour ajouter des fonctionnalités
+ * spécifiques aux techniciens qui gèrent les tickets.
+ */
 #[ORM\Entity(repositoryClass: TechnicienRepository::class)]
-class Technicien extends Personne implements PasswordAuthenticatedUserInterface, UserInterface
+class Technicien extends Utilisateur
 {
     /**
      * @var Collection<int, Ticket>
@@ -21,15 +27,43 @@ class Technicien extends Personne implements PasswordAuthenticatedUserInterface,
     #[Groups(['technicien:read'])]
     private Collection $tickets;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['technicien:read'])]
-    #[Assert\Length(max: 255)]
+    /**
+     * Spécialité du technicien
+     */
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['technicien:read', 'technicien:write', 'ticket:read'])]
+    #[Assert\Length(max: 50)]
     private ?string $specialite = null;
+
+    /**
+     * Niveau d'expertise du technicien (junior, senior, expert)
+     */
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Assert\Length(max: 20)]
+    #[Groups(['technicien:read', 'technicien:write'])]
+    private ?string $niveau = null;
+
+    /**
+     * Disponibilité du technicien (disponible, occupé, absent)
+     */
+    #[ORM\Column(length: 20)]
+    #[Groups(['technicien:read', 'technicien:write', 'ticket:read'])]
+    private ?string $disponibilite = 'disponible';
+
+    /**
+     * Nombre maximum de tickets que le technicien peut gérer simultanément
+     */
+    #[ORM\Column]
+    #[Assert\Positive(message: 'La charge maximale doit être un nombre positif')]
+    #[Groups(['technicien:read', 'technicien:write'])]
+    private ?int $chargeMaximale = 5;
 
     public function __construct()
     {
         parent::__construct();
         $this->tickets = new ArrayCollection();
+        $this->disponibilite = 'disponible';
+        $this->chargeMaximale = 5;
         $this->addRole('ROLE_TECHNICIEN');
     }
 
@@ -41,6 +75,39 @@ class Technicien extends Personne implements PasswordAuthenticatedUserInterface,
     public function setSpecialite(?string $specialite): static
     {
         $this->specialite = $specialite;
+        return $this;
+    }
+
+    public function getNiveau(): ?string
+    {
+        return $this->niveau;
+    }
+
+    public function setNiveau(?string $niveau): static
+    {
+        $this->niveau = $niveau;
+        return $this;
+    }
+
+    public function getDisponibilite(): ?string
+    {
+        return $this->disponibilite;
+    }
+
+    public function setDisponibilite(string $disponibilite): static
+    {
+        $this->disponibilite = $disponibilite;
+        return $this;
+    }
+
+    public function getChargeMaximale(): ?int
+    {
+        return $this->chargeMaximale;
+    }
+
+    public function setChargeMaximale(int $chargeMaximale): static
+    {
+        $this->chargeMaximale = $chargeMaximale;
         return $this;
     }
 

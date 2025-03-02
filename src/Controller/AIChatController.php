@@ -109,10 +109,8 @@ class AIChatController extends AbstractController
             $this->entityManager->persist($message);
             $this->entityManager->flush();
             
-            // Générer une réponse IA de manière asynchrone
-            $this->aiService->handleUserMessage($message);
-
-            return $this->json([
+            // Préparer la réponse pour le message utilisateur
+            $response = [
                 'id' => $message->getId(),
                 'content' => $message->getMessage(),
                 'messageType' => $message->getMessageType()->value,
@@ -120,7 +118,13 @@ class AIChatController extends AbstractController
                 'timestamp' => $message->getTimestamp()->format('c'),
                 'reactions' => [],
                 'isRead' => false
-            ]);
+            ];
+            
+            // Générer une réponse IA de manière asynchrone en utilisant un thread séparé
+            // pour ne pas bloquer la réponse au client
+            $this->aiService->handleUserMessage($message);
+
+            return $this->json($response);
         } catch (\Exception $e) {
             return $this->json([
                 'error' => 'Erreur lors de l\'envoi du message',
@@ -177,6 +181,45 @@ class AIChatController extends AbstractController
         $request->getSession()->set('ai_chat_id', $chatbox->getId());
         
         return $this->redirectToRoute('app_ticket_new');
+    }
+    
+    /**
+     * Endpoint pour gérer les événements de frappe
+     */
+    #[Route('/{id}/typing', name: 'app_ai_chat_typing', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    public function handleTyping(Request $request, Chatbox $chatbox): JsonResponse
+    {
+        if (!$chatbox->isTemporary()) {
+            return $this->json(['error' => 'Chatbox invalide'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$this->isCsrfTokenValid('ai_chat', $request->headers->get('X-CSRF-TOKEN'))) {
+            return $this->json(['error' => 'Token CSRF invalide'], Response::HTTP_FORBIDDEN);
+        }
+
+        /** @var Personne $user */
+        $user = $this->getUser();
+        
+        // Vérifier que l'utilisateur est bien connecté
+        if (!$user) {
+            return $this->json(['error' => 'Utilisateur non authentifié'], Response::HTTP_UNAUTHORIZED);
+        }
+        
+        try {
+            $content = json_decode($request->getContent(), true);
+            $isTyping = $content['isTyping'] ?? false;
+            
+            // Ici, vous pourriez publier l'événement de frappe via Mercure
+            // Pour l'instant, nous retournons simplement un succès
+            
+            return $this->json(['success' => true]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => 'Erreur lors du traitement de l\'événement de frappe',
+                'details' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
     
     /**

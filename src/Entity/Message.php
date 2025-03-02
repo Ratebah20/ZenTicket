@@ -6,6 +6,7 @@ use App\Enum\MessageType;
 use App\Repository\MessageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * Entité représentant un message dans une chatbox
@@ -19,49 +20,64 @@ class Message
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['message:read', 'chatbox:item:read'])]
     private ?int $id = null;
 
     /**
      * Contenu du message
      */
     #[ORM\Column(length: 255)]
+    #[Groups(['message:read', 'message:write', 'chatbox:item:read'])]
     private ?string $message = null;
 
     /**
      * Date d'envoi du message
      */
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['message:read', 'chatbox:item:read'])]
     private ?\DateTimeInterface $timestamp = null;
 
     /**
      * Type de message (texte, IA, système)
      */
     #[ORM\Column(type: 'string', length: 20, enumType: MessageType::class)]
+    #[Groups(['message:read', 'chatbox:item:read'])]
     private ?MessageType $messageType = MessageType::USER;
 
     /**
      * Réactions/émojis sur le message
      */
     #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['message:read', 'chatbox:item:read'])]
     private array $reactions = [];
 
     /**
      * Statut de lecture du message
      */
     #[ORM\Column]
+    #[Groups(['message:read', 'message:write'])]
     private bool $isRead = false;
 
     /**
      * Chatbox dans laquelle le message est envoyé
      */
     #[ORM\ManyToOne(inversedBy: 'messages')]
+    #[Groups(['message:read', 'message:write'])]
     private ?Chatbox $chatbox = null;
 
     /**
      * Identifiant de l'expéditeur
      */
     #[ORM\Column]
+    #[Groups(['message:read', 'message:write', 'chatbox:item:read'])]
     private ?int $senderID = null;
+
+    /**
+     * Identifiant du message utilisateur associé
+     */
+    #[ORM\Column(type: "integer", nullable: true)]
+    #[Groups(['message:read', 'chatbox:item:read'])]
+    private ?int $userMessageId = null;
 
     /**
      * Récupère l'identifiant du message
@@ -226,6 +242,25 @@ class Message
     public function setSenderID(int $senderID): static
     {
         $this->senderID = $senderID;
+        return $this;
+    }
+
+    /**
+     * Récupère l'identifiant du message utilisateur associé
+     */
+    public function getUserMessageId(): ?int
+    {
+        return $this->userMessageId;
+    }
+
+    /**
+     * Définit l'identifiant du message utilisateur associé
+     * 
+     * @param int|null $userMessageId L'identifiant du message utilisateur associé
+     */
+    public function setUserMessageId(?int $userMessageId): self
+    {
+        $this->userMessageId = $userMessageId;
         return $this;
     }
 }

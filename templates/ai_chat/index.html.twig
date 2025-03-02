@@ -160,7 +160,8 @@
             csrfToken: "{{ csrf_token('ai_chat') }}",
             routes: {
                 messages: "{{ path('app_ai_chat_messages', {id: chatbox.id}) }}",
-                send: "{{ path('app_ai_chat_send', {id: chatbox.id}) }}"
+                send: "{{ path('app_ai_chat_send', {id: chatbox.id}) }}",
+                typing: "{{ path('app_ai_chat_typing', {id: chatbox.id}) }}"
             }
         };
 
@@ -169,6 +170,7 @@
         console.log('ID de la chatbox:', {{ chatbox.id }});
         console.log('URL d\'envoi de messages:', "{{ path('app_ai_chat_send', {id: chatbox.id}) }}");
         console.log('URL de récupération des messages:', "{{ path('app_ai_chat_messages', {id: chatbox.id}) }}");
+        console.log('URL des événements de frappe:', "{{ path('app_ai_chat_typing', {id: chatbox.id}) }}");
 
         // Initialiser le chat quand jQuery est prêt
         $(document).ready(function() {

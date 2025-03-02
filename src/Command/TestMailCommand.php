@@ -26,7 +26,9 @@ class TestMailCommand extends Command
 
     protected function configure(): void
     {
-        $this->setDescription(self::$defaultDescription)
+        $this
+             ->setName(self::$defaultName)
+             ->setDescription(self::$defaultDescription)
              ->setHelp('Cette commande envoie un email de test pour vérifier que la configuration du mailer fonctionne correctement.');
     }
 

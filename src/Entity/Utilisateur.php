@@ -11,21 +11,66 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
+/**
+ * Entité représentant un utilisateur du système
+ * 
+ * Cette classe gère les utilisateurs qui peuvent créer des tickets
+ * et interagir avec le système de support.
+ */
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
-class Utilisateur extends Personne implements PasswordAuthenticatedUserInterface, UserInterface
+class Utilisateur extends Personne implements UserInterface, PasswordAuthenticatedUserInterface
 {
     /**
+     * Prénom de l'utilisateur
+     */
+    #[ORM\Column(length: 50)]
+    #[Assert\NotBlank(message: 'Le prénom est obligatoire')]
+    #[Groups(['utilisateur:read', 'utilisateur:write', 'ticket:read', 'commentaire:read', 'message:read'])]
+    private ?string $prenom = null;
+
+    /**
+     * Numéro de téléphone de l'utilisateur
+     */
+    #[ORM\Column(length: 20, nullable: true)]
+    #[Groups(['utilisateur:read', 'utilisateur:write'])]
+    private ?string $telephone = null;
+
+    /**
+     * Service ou département de l'utilisateur
+     */
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['utilisateur:read', 'utilisateur:write', 'ticket:read'])]
+    private ?string $service = null;
+
+    /**
+     * Collection des tickets créés par cet utilisateur
+     * 
      * @var Collection<int, Ticket>
      */
-    #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'utilisateur')]
-    #[Groups(['user:read'])]
+    #[ORM\OneToMany(mappedBy: 'utilisateur', targetEntity: Ticket::class)]
+    #[Groups(['utilisateur:item:read'])]
     private Collection $tickets;
+
+    /**
+     * Date de dernière connexion
+     */
+    #[ORM\Column(nullable: true)]
+    #[Groups(['utilisateur:read'])]
+    private ?\DateTimeImmutable $lastLogin = null;
+
+    /**
+     * Indique si le compte est actif
+     */
+    #[ORM\Column]
+    #[Groups(['utilisateur:read', 'utilisateur:write'])]
+    private ?bool $isActive = true;
 
     public function __construct()
     {
         parent::__construct();
         $this->tickets = new ArrayCollection();
         $this->addRole('ROLE_USER');
+        $this->isActive = true;
     }
 
     /**
@@ -72,6 +117,61 @@ class Utilisateur extends Personne implements PasswordAuthenticatedUserInterface
             }
         }
 
+        return $this;
+    }
+
+    public function getPrenom(): ?string
+    {
+        return $this->prenom;
+    }
+
+    public function setPrenom(string $prenom): static
+    {
+        $this->prenom = $prenom;
+        return $this;
+    }
+
+    public function getTelephone(): ?string
+    {
+        return $this->telephone;
+    }
+
+    public function setTelephone(?string $telephone): static
+    {
+        $this->telephone = $telephone;
+        return $this;
+    }
+
+    public function getService(): ?string
+    {
+        return $this->service;
+    }
+
+    public function setService(?string $service): static
+    {
+        $this->service = $service;
+        return $this;
+    }
+
+    public function getLastLogin(): ?\DateTimeImmutable
+    {
+        return $this->lastLogin;
+    }
+
+    public function setLastLogin(?\DateTimeImmutable $lastLogin): static
+    {
+        $this->lastLogin = $lastLogin;
+        return $this;
+    }
+
+    public function isIsActive(): ?bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
         return $this;
     }
 }
