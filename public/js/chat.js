@@ -66,6 +66,9 @@ class Chat {
         // Initialiser le sélecteur d'emoji
         this.initEmojiPicker();
         
+        // Ajouter un bouton de test Mercure dans l'interface
+        this.addMercureTestButton();
+        
         // Charger les messages initiaux
         this.loadInitialMessages();
         
@@ -132,6 +135,59 @@ class Chat {
         
         // Initialiser le sélecteur d'emoji
         this.initEmojiPicker();
+    }
+
+    // Nouvelle méthode pour ajouter un bouton de test Mercure
+    addMercureTestButton() {
+        const chatHeader = $('.chat-header');
+        if (chatHeader.length) {
+            const statusButton = $('<button>')
+                .addClass('btn btn-sm btn-outline-info ms-2')
+                .html('<i class="fas fa-wifi"></i> Test Mercure')
+                .on('click', () => {
+                    this.testMercureConnection();
+                });
+            chatHeader.append(statusButton);
+            
+            console.log('Bouton de test Mercure ajouté');
+        } else {
+            console.warn('Élément .chat-header non trouvé, impossible d\'ajouter le bouton de test Mercure');
+        }
+    }
+
+    // Nouvelle méthode pour tester la connexion Mercure
+    testMercureConnection() {
+        console.log('Test de la connexion Mercure');
+        
+        // Afficher les informations de connexion
+        const status = {
+            status: this.eventSource ? 
+                    (this.eventSource.readyState === EventSource.CONNECTING ? 'CONNECTING' :
+                     this.eventSource.readyState === EventSource.OPEN ? 'OPEN' :
+                     this.eventSource.readyState === EventSource.CLOSED ? 'CLOSED' : 'UNKNOWN') : 'null',
+            reconnectAttempts: this.reconnectAttempts || 0,
+            mercureUrl: this.config.mercureUrl,
+            topic: `/chat/${this.config.id}`,
+            tokenPresent: !!this.config.subscriberToken,
+            eventSourcePolyfillAvailable: typeof EventSourcePolyfill !== 'undefined'
+        };
+        
+        console.log('État de la connexion Mercure:', status);
+        
+        // Tenter de reconnecter si nécessaire
+        if (!this.eventSource || this.eventSource.readyState === EventSource.CLOSED) {
+            console.log('Pas de connexion EventSource, reconnexion...');
+            this.setupEventSource();
+        }
+        
+        // Afficher un message à l'utilisateur
+        alert(`État de la connexion Mercure:
+- Statut: ${status.status}
+- Tentatives de reconnexion: ${status.reconnectAttempts}
+- URL Mercure: ${status.mercureUrl}
+- Topic: ${status.topic}
+- Token présent: ${status.tokenPresent ? 'Oui' : 'Non'}
+- EventSourcePolyfill disponible: ${status.eventSourcePolyfillAvailable ? 'Oui' : 'Non'}`);
     }
 
     sendMessage(content, type = 'text') {
@@ -297,39 +353,69 @@ class Chat {
         }
     
         try {
-            // Construire l’URL avec les topics
+            // Construire l'URL avec les topics
             const url = new URL(this.config.mercureUrl);
     
-            // Exemple : un topic /chat/78 (selon l’ID de votre conversation)
+            // Exemple : un topic /chat/78 (selon l'ID de votre conversation)
             url.searchParams.append('topic', `/chat/${this.config.id}`);
     
-            // Ajouter le token dans l’URL (si votre hub accepte ce mode)
-            if (this.config.subscriberToken) {
-                url.searchParams.append('token', this.config.subscriberToken);
+            // Vérifier si EventSourcePolyfill est disponible
+            if (typeof EventSourcePolyfill !== 'undefined') {
+                console.log('Utilisation de EventSourcePolyfill avec en-tête Authorization');
+                
+                // Créer la source d'événements avec l'en-tête Authorization
+                this.eventSource = new EventSourcePolyfill(url.toString(), {
+                    headers: {
+                        'Authorization': `Bearer ${this.config.subscriberToken}`
+                    }
+                });
+            } else {
+                console.log('Fallback sur EventSource standard avec withCredentials');
+                
+                // Ajouter le token dans l'URL (si votre hub accepte ce mode)
+                if (this.config.subscriberToken) {
+                    url.searchParams.append('token', this.config.subscriberToken);
+                }
+                
+                // Créer la source d'événements en autorisant les credentials (CORS)
+                this.eventSource = new EventSource(url.toString(), { withCredentials: true });
             }
     
-            // Créer la source d’événements en autorisant les credentials (CORS)
-            const eventSource = new EventSource(url, { withCredentials: true });
-    
-            eventSource.onopen = (event) => {
-                console.log('Connexion Mercure établie');
+            this.eventSource.onopen = (event) => {
+                console.log('Connexion Mercure établie !', event);
+                this.connectionStatus = 'OPEN';
+                
+                // Afficher un message de succès dans l'interface
+                this.showSuccessMessage('Connexion en temps réel établie', 3000);
             };
     
-            eventSource.onmessage = (event) => {
-                console.log('Message Mercure reçu');
+            this.eventSource.onmessage = (event) => {
+                console.log('Message Mercure reçu:', event);
                 this.handleMercureMessage(event);
             };
     
-            eventSource.onerror = (event) => {
+            this.eventSource.onerror = (event) => {
                 console.error('Erreur de connexion Mercure:', event);
-                eventSource.close();
+                this.connectionStatus = 'ERROR';
+                
+                // Fermer la connexion actuelle
+                this.eventSource.close();
+                
+                // Stratégie de reconnexion avec backoff exponentiel
+                const reconnectDelay = Math.min(30000, Math.pow(2, this.reconnectAttempts) * 1000);
+                console.log(`Tentative de reconnexion dans ${reconnectDelay}ms (tentative ${this.reconnectAttempts + 1})`);
+                
+                setTimeout(() => {
+                    this.reconnectAttempts++;
+                    this.setupEventSource();
+                }, reconnectDelay);
+                
                 this.showErrorMessage(
                   'Erreur de connexion au serveur de messages en temps réel. ' +
-                  'Rechargez la page pour réessayer.'
+                  'Tentative de reconnexion automatique...'
                 );
             };
     
-            this.eventSource = eventSource;
             console.log('Source d\'événements Mercure configurée avec succès');
         } catch (error) {
             console.error('Erreur lors de la configuration de la source d\'événements Mercure:', error);
@@ -337,30 +423,6 @@ class Chat {
               'Erreur de connexion au serveur de messages en temps réel: ' + error.message
             );
         }
-    }
-
-    testMercureConnection() {
-        console.log('Test de la connexion Mercure');
-        
-        if (!this.eventSource) {
-            console.log('Pas de connexion EventSource, reconnexion...');
-            this.setupEventSource();
-            return false;
-        }
-        
-        if (this.eventSource.readyState === EventSource.CLOSED) {
-            console.log('Connexion fermée, reconnexion...');
-            this.setupEventSource();
-            return false;
-        }
-        
-        if (this.eventSource.readyState === EventSource.CONNECTING) {
-            console.log('Connexion en cours...');
-            return false;
-        }
-        
-        console.log('Connexion Mercure active');
-        return true;
     }
 
     handleMercureMessage(event) {
@@ -379,110 +441,162 @@ class Chat {
             
             console.log('Message pour cette conversation, traitement en cours...');
             
-            // Vérifier si c'est un message de mise à jour de statut de lecture
-            if (data.type === 'read_status') {
-                console.log('Mise à jour du statut de lecture reçue');
-                this.updateMessageReadStatus(data.messageId, true);
-                return;
-            }
-            
-            // Vérifier si c'est un message de réaction
-            if (data.type === 'reaction') {
-                console.log('Réaction reçue');
-                this.updateMessageReactions(data.messageId, data.reactions);
-                return;
-            }
-            
-            // Vérifier si c'est un message de suppression
-            if (data.type === 'delete') {
-                console.log('Suppression de message reçue');
-                this.deleteMessage(data.messageId);
-                return;
-            }
-            
-            // Vérifier si c'est un message normal
-            if (data.type === 'message') {
-                console.log('Message normal reçu via Mercure');
-                
-                // Vérifier si le message est dans le nouveau format avec data.message
-                const messageData = data.message || data;
-                
-                // Log pour déboguer
-                console.log('Message data après traitement:', messageData);
-                console.log('Type de message:', messageData.messageType);
-                console.log('ID du message utilisateur associé:', messageData.userMessageId);
-                
-                // NOUVEAU: Vérifier si le message est déjà dans la liste des messages
-                if (messageData.id && this.messages.has(messageData.id)) {
-                    console.log(`Message ${messageData.id} déjà dans la liste, vérification de mise à jour`);
+            // Traiter différents types de messages
+            switch (data.type) {
+                case 'read_status':
+                    console.log('Mise à jour du statut de lecture reçue');
+                    this.updateMessageReadStatus(data.messageId, true);
+                    break;
                     
-                    // Comparer les timestamps pour voir si le message Mercure est plus récent
-                    const existingMessage = this.messages.get(messageData.id);
-                    if (new Date(messageData.updatedAt) > new Date(existingMessage.updatedAt)) {
-                        console.log('Message Mercure plus récent, mise à jour');
-                        this.addMessage(messageData, true);
-                    } else {
-                        console.log('Message existant plus récent, ignoré');
+                case 'reaction':
+                    console.log('Réaction reçue');
+                    this.updateMessageReactions(data.messageId, data.reactions);
+                    break;
+                    
+                case 'delete':
+                    console.log('Suppression de message reçue');
+                    this.deleteMessage(data.messageId);
+                    break;
+                    
+                case 'message':
+                    console.log('Message reçu via Mercure');
+                    
+                    // Récupérer les données du message (nouveau format ou ancien)
+                    const messageData = data.message || data;
+                    
+                    // Logs détaillés pour le débogage
+                    console.log('Message data:', messageData);
+                    console.log('Type de message:', messageData.messageType);
+                    console.log('ID du message:', messageData.id);
+                    console.log('ID du message utilisateur associé:', messageData.userMessageId);
+                    
+                    // Vérifier si le message existe déjà
+                    if (messageData.id && this.messages.has(messageData.id)) {
+                        console.log(`Message ${messageData.id} déjà dans la liste, ignoré`);
+                        return;
                     }
-                    return;
-                }
-                
-                // Si c'est un message IA, vérifier s'il a un userMessageId
-                if (messageData.messageType === 'ai') {
-                    console.log('Message IA reçu via Mercure');
                     
-                    // Vérifier si le message IA a un userMessageId
-                    if (messageData.userMessageId) {
-                        console.log(`Message IA avec userMessageId: ${messageData.userMessageId}`);
-                        
-                        // Vérifier si le message utilisateur correspondant existe déjà
-                        if (this.messageElements.has(messageData.userMessageId)) {
-                            console.log('Message utilisateur correspondant trouvé, ajout du message IA');
-                            this.addMessage(messageData, true);
-                        } else {
-                            // Si le message utilisateur n'existe pas encore, vérifier s'il y a un message temporaire
-                            const tempId = `temp-${messageData.userMessageId}`;
-                            if (this.messageElements.has(tempId)) {
-                                console.log(`Message utilisateur temporaire trouvé (${tempId}), transfert du message IA`);
-                                
-                                // Transférer le message IA vers le message temporaire
-                                const pendingMessages = this.pendingAIMessagesByTempUserMessage.get(tempId) || [];
-                                pendingMessages.push(messageData);
-                                this.pendingAIMessagesByTempUserMessage.set(tempId, pendingMessages);
-                                
-                                // Définir un timeout pour éviter que le message ne reste bloqué indéfiniment
-                                this.setPendingMessageTimeout(messageData, tempId);
-                            } else {
-                                console.log(`Aucun message utilisateur trouvé pour ${messageData.userMessageId}, mise en attente du message IA`);
-                                
-                                // Mettre le message IA en attente
-                                const pendingMessages = this.pendingAIMessagesByUserMessage.get(messageData.userMessageId) || [];
-                                pendingMessages.push(messageData);
-                                this.pendingAIMessagesByUserMessage.set(messageData.userMessageId, pendingMessages);
-                                
-                                // Définir un timeout pour éviter que le message ne reste bloqué indéfiniment
-                                this.setPendingMessageTimeout(messageData, messageData.userMessageId);
-                            }
+                    // Si c'est un message IA, vérifier s'il correspond à un message temporaire
+                    if (messageData.messageType === 'ai' && messageData.userMessageId) {
+                        // Vérifier si un message temporaire existe pour ce message utilisateur
+                        const tempUserMessageId = `temp-${messageData.userMessageId}`;
+                        if (this.messageElements.has(tempUserMessageId)) {
+                            console.log(`Message temporaire trouvé pour le message utilisateur ${messageData.userMessageId}`);
+                            
+                            // Mettre à jour le statut de traitement du message temporaire
+                            this.updateMessageProcessingStatus(tempUserMessageId, false);
                         }
-                    } else if (this.lastUserMessageId) {
-                        // Si le message IA n'a pas de userMessageId mais qu'on a un dernier message utilisateur,
-                        // on l'associe à ce dernier message utilisateur
-                        console.log(`Message IA sans userMessageId, association au dernier message utilisateur: ${this.lastUserMessageId}`);
-                        messageData.userMessageId = this.lastUserMessageId;
-                        this.addMessage(messageData, true);
-                    } else {
-                        // Si on n'a pas de dernier message utilisateur, on ajoute simplement le message IA
-                        console.log('Message IA sans userMessageId et pas de dernier message utilisateur, ajout simple');
-                        this.addMessage(messageData, true);
                     }
-                } else {
-                    // Pour les autres types de messages, ajouter normalement
-                    console.log('Message non-IA reçu via Mercure, ajout normal');
-                    this.addMessage(messageData, true);
-                }
+                    
+                    // Forcer l'affichage du message dans l'interface
+                    this.displayMercureMessage(messageData);
+                    
+                    // Si c'est un message IA, mettre à jour le statut de traitement
+                    if (messageData.messageType === 'ai' && messageData.userMessageId) {
+                        console.log(`Message IA reçu pour le message utilisateur ${messageData.userMessageId}`);
+                        this.updateMessageProcessingStatus(messageData.userMessageId, false);
+                    }
+                    break;
+                    
+                default:
+                    console.log(`Type de message inconnu: ${data.type}`);
             }
         } catch (error) {
             console.error('Erreur lors du traitement du message Mercure:', error);
+        }
+    }
+    
+    // Nouvelle méthode pour afficher les messages reçus via Mercure
+    displayMercureMessage(messageData) {
+        console.log('Affichage du message Mercure:', messageData);
+        
+        // Ajouter le message à la Map des messages
+        if (messageData.id) {
+            this.messages.set(messageData.id, messageData);
+        }
+        
+        // Créer l'élément de message
+        const messageElement = this.createMessageElement(messageData);
+        
+        // Insérer le message dans le DOM
+        if (messageData.messageType === 'ai' && messageData.userMessageId) {
+            // Pour les messages IA, essayer d'abord de trouver le message utilisateur correspondant
+            let userMessageElement = this.messageElements.get(messageData.userMessageId);
+            
+            // Si le message utilisateur n'est pas trouvé, essayer avec l'ID temporaire
+            const tempUserMessageId = `temp-${messageData.userMessageId}`;
+            if (!userMessageElement && this.messageElements.has(tempUserMessageId)) {
+                userMessageElement = this.messageElements.get(tempUserMessageId);
+                console.log(`Message utilisateur temporaire trouvé (${tempUserMessageId}), utilisation pour l'insertion du message IA`);
+            }
+            
+            if (userMessageElement && userMessageElement.length) {
+                console.log(`Insertion du message IA après le message utilisateur ${userMessageElement.attr('data-message-id')}`);
+                userMessageElement.after(messageElement);
+            } else {
+                // Si le message utilisateur n'est pas trouvé, insérer par timestamp
+                console.log('Message utilisateur non trouvé, insertion par timestamp');
+                this.insertMessageByTimestamp(messageElement, messageData);
+            }
+        } else {
+            // Pour les autres types de messages, insérer par timestamp
+            this.insertMessageByTimestamp(messageElement, messageData);
+        }
+        
+        // Ajouter à la Map des éléments de message
+        if (messageData.id) {
+            this.messageElements.set(messageData.id, messageElement);
+            
+            // Si c'est un message utilisateur, mettre à jour l'ID du dernier message utilisateur
+            if (messageData.messageType === 'user') {
+                this.lastUserMessageId = messageData.id;
+                console.log(`ID du dernier message utilisateur mis à jour: ${this.lastUserMessageId}`);
+                
+                // Si ce message remplace un message temporaire, supprimer l'entrée temporaire
+                const tempId = `temp-${messageData.id}`;
+                if (this.messageElements.has(tempId)) {
+                    console.log(`Suppression de l'entrée temporaire ${tempId} remplacée par le message réel ${messageData.id}`);
+                    this.messageElements.delete(tempId);
+                }
+            }
+        }
+        
+        // Défiler vers le bas si nécessaire
+        if (this.isScrolledToBottom()) {
+            this.scrollToBottom();
+        }
+        
+        // Jouer un son de notification pour les nouveaux messages
+        this.playNotificationSound();
+    }
+    
+    // Méthode pour jouer un son de notification
+    playNotificationSound() {
+        try {
+            // Vérifier si la notification sonore est activée
+            if (this.config.enableSoundNotifications !== false) {
+                // Vérifier si le fichier existe avant de tenter de le jouer
+                const audioPath = '/sounds/notification.mp3';
+                
+                // Utiliser fetch pour vérifier si le fichier existe
+                fetch(audioPath, { method: 'HEAD' })
+                    .then(response => {
+                        if (response.ok) {
+                            const audio = new Audio(audioPath);
+                            audio.volume = 0.5;
+                            audio.play().catch(error => {
+                                console.warn('Impossible de jouer le son de notification:', error);
+                            });
+                        } else {
+                            console.warn(`Le fichier audio ${audioPath} n'existe pas`);
+                        }
+                    })
+                    .catch(error => {
+                        console.warn('Erreur lors de la vérification du fichier audio:', error);
+                    });
+            }
+        } catch (error) {
+            console.warn('Erreur lors de la lecture du son de notification:', error);
         }
     }
     
@@ -770,7 +884,7 @@ class Chat {
         if (messageData.id && this.messageElements.has(messageData.id)) {
             console.log(`Message ${messageData.id} déjà affiché, mise à jour si nécessaire`);
             
-            // NOUVEAU: Si le message existe déjà mais qu'il vient de Mercure, ne pas le mettre à jour
+            // Si le message existe déjà mais qu'il vient de Mercure, ne pas le mettre à jour
             // car la version HTTP est plus complète
             if (fromMercure) {
                 console.log(`Message ${messageData.id} reçu via Mercure mais déjà affiché, ignoré`);
@@ -800,20 +914,40 @@ class Chat {
             return existingElement;
         }
 
-        // Vérifier si c'est un message temporaire qui est remplacé par un message réel
-        if (fromMercure && messageData.id && String(messageData.id).indexOf('temp-') === 0) {
-            // Chercher un message temporaire de même contenu
-            const tempElements = Array.from(document.querySelectorAll('.message'))
-                .filter(el => el.getAttribute('data-message-id').indexOf('temp-') === 0);
-            
-            for (const tempEl of tempElements) {
-                const tempContent = tempEl.querySelector('.message-content').textContent.trim();
-                if (tempContent === messageData.content.trim()) {
-                    console.log('Message temporaire trouvé et remplacé par le message réel');
-                    // Supprimer l'élément temporaire
-                    tempEl.remove();
-                    break;
+        // Vérifier si c'est un message réel qui remplace un message temporaire
+        if (!fromMercure && messageData.id && !String(messageData.id).startsWith('temp-')) {
+            const tempId = `temp-${messageData.id}`;
+            if (this.messageElements.has(tempId)) {
+                console.log(`Message temporaire ${tempId} trouvé, remplacement par le message réel ${messageData.id}`);
+                
+                // Mettre à jour l'élément temporaire avec les données du message réel
+                const tempElement = this.messageElements.get(tempId);
+                tempElement.attr('data-message-id', messageData.id);
+                
+                // Mettre à jour le contenu si nécessaire
+                const contentElement = tempElement.find('.message-content');
+                if (contentElement.length > 0 && messageData.content) {
+                    contentElement.html(this.formatMessageContent(messageData.content));
                 }
+                
+                // Ajouter l'élément à la Map avec le nouvel ID
+                this.messageElements.set(messageData.id, tempElement);
+                
+                // Supprimer l'entrée temporaire
+                this.messageElements.delete(tempId);
+                
+                console.log(`Message temporaire ${tempId} remplacé avec succès par le message réel ${messageData.id}`);
+                
+                // Si c'est un message utilisateur, vérifier s'il y a des messages IA en attente
+                if (messageData.messageType === 'user') {
+                    this.lastUserMessageId = messageData.id;
+                    console.log(`ID du dernier message utilisateur mis à jour: ${this.lastUserMessageId}`);
+                    
+                    // Vérifier s'il y a des messages IA en attente pour ce message utilisateur
+                    this.processPendingAIMessages(messageData.id, tempId);
+                }
+                
+                return tempElement;
             }
         }
 
@@ -822,15 +956,23 @@ class Chat {
         // Créer l'élément de message
         const messageElement = this.createMessageElement(messageData);
         
-        // MODIFIÉ: Amélioration de la logique d'insertion pour les messages IA
-        // Si c'est un message IA avec un userMessageId, s'assurer qu'il est placé après le message utilisateur
+        // Insérer le message dans le DOM
         if (messageData.messageType === 'ai' && messageData.userMessageId) {
-            const userMessageElement = this.messageElements.get(messageData.userMessageId);
-            if (userMessageElement) {
-                console.log(`Insertion du message IA après le message utilisateur ${messageData.userMessageId}`);
-                $(userMessageElement).after(messageElement);
+            // Pour les messages IA, insérer après le message utilisateur correspondant
+            let userMessageElement = this.messageElements.get(messageData.userMessageId);
+            
+            // Si le message utilisateur n'est pas trouvé, essayer avec l'ID temporaire
+            const tempUserMessageId = `temp-${messageData.userMessageId}`;
+            if (!userMessageElement && this.messageElements.has(tempUserMessageId)) {
+                userMessageElement = this.messageElements.get(tempUserMessageId);
+                console.log(`Message utilisateur temporaire trouvé (${tempUserMessageId}), utilisation pour l'insertion du message IA`);
+            }
+            
+            if (userMessageElement && userMessageElement.length) {
+                console.log(`Insertion du message IA après le message utilisateur ${userMessageElement.attr('data-message-id')}`);
+                userMessageElement.after(messageElement);
             } else {
-                // NOUVEAU: Si le message utilisateur n'est pas trouvé, mettre le message IA en attente
+                // Si le message utilisateur n'est pas trouvé, mettre le message IA en attente
                 console.log(`Message utilisateur ${messageData.userMessageId} non trouvé, mise en attente du message IA`);
                 const pendingMessages = this.pendingAIMessagesByUserMessage.get(messageData.userMessageId) || [];
                 pendingMessages.push(messageData);
@@ -848,31 +990,14 @@ class Chat {
         if (messageData.id) {
             this.messageElements.set(messageData.id, messageElement);
             
-            // Si c'est un message utilisateur, vérifier s'il y a des messages IA en attente pour ce message
+            // Si c'est un message utilisateur, vérifier s'il y a des messages IA en attente
             if (messageData.messageType === 'user') {
                 // Enregistrer l'ID du dernier message utilisateur
                 this.lastUserMessageId = messageData.id;
                 console.log(`ID du dernier message utilisateur mis à jour: ${this.lastUserMessageId}`);
                 
-                // Vérifier s'il y a des messages IA en attente pour ce message utilisateur spécifique
-                const pendingAIMessages = this.pendingAIMessagesByUserMessage.get(messageData.id);
-                if (pendingAIMessages && pendingAIMessages.length > 0) {
-                    console.log(`Traitement de ${pendingAIMessages.length} messages IA en attente pour le message utilisateur ${messageData.id}`);
-                    
-                    // NOUVEAU: Copier les messages en attente pour éviter les problèmes de modification pendant l'itération
-                    const messagesToProcess = [...pendingAIMessages];
-                    // Vider la liste des messages en attente
-                    this.pendingAIMessagesByUserMessage.set(messageData.id, []);
-                    
-                    // Attendre un court instant pour s'assurer que le message utilisateur est bien affiché
-                    setTimeout(() => {
-                        messagesToProcess.forEach(msg => {
-                            console.log('Ajout d\'un message IA en attente:', msg);
-                            // Utiliser addMessage directement pour bénéficier de la logique d'insertion après le message utilisateur
-                            this.addMessage(msg, true);
-                        });
-                    }, 100);
-                }
+                // Vérifier s'il y a des messages IA en attente pour ce message utilisateur
+                this.processPendingAIMessages(messageData.id);
             }
         }
         
@@ -889,6 +1014,46 @@ class Chat {
         }
         
         return messageElement;
+    }
+    
+    // Nouvelle méthode pour traiter les messages IA en attente
+    processPendingAIMessages(userMessageId, tempUserMessageId = null) {
+        console.log(`Traitement des messages IA en attente pour le message utilisateur ${userMessageId}`);
+        
+        // Vérifier s'il y a des messages IA en attente pour ce message utilisateur
+        const pendingAIMessages = this.pendingAIMessagesByUserMessage.get(userMessageId) || [];
+        
+        // Vérifier également s'il y a des messages en attente pour l'ID temporaire
+        if (tempUserMessageId) {
+            const tempPendingMessages = this.pendingAIMessagesByTempUserMessage.get(tempUserMessageId) || [];
+            if (tempPendingMessages.length > 0) {
+                console.log(`${tempPendingMessages.length} messages IA en attente trouvés pour l'ID temporaire ${tempUserMessageId}`);
+                pendingAIMessages.push(...tempPendingMessages);
+                this.pendingAIMessagesByTempUserMessage.set(tempUserMessageId, []);
+            }
+        }
+        
+        if (pendingAIMessages.length === 0) {
+            console.log(`Aucun message IA en attente pour le message utilisateur ${userMessageId}`);
+            return;
+        }
+        
+        console.log(`Traitement de ${pendingAIMessages.length} messages IA en attente`);
+        
+        // Copier les messages en attente pour éviter les problèmes de modification pendant l'itération
+        const messagesToProcess = [...pendingAIMessages];
+        
+        // Vider la liste des messages en attente
+        this.pendingAIMessagesByUserMessage.set(userMessageId, []);
+        
+        // Attendre un court instant pour s'assurer que le message utilisateur est bien affiché
+        setTimeout(() => {
+            messagesToProcess.forEach(msg => {
+                console.log('Traitement du message IA en attente:', msg);
+                // Utiliser addMessage directement pour bénéficier de la logique d'insertion après le message utilisateur
+                this.addMessage(msg, true);
+            });
+        }, 100);
     }
     
     // NOUVELLE MÉTHODE: Extraire la logique d'insertion par timestamp dans une méthode séparée
@@ -1155,6 +1320,51 @@ class Chat {
         const message = this.messages.get(messageId);
         if (message) {
             message.isRead = isRead;
+        }
+    }
+    
+    // Nouvelle méthode pour mettre à jour le statut de traitement d'un message
+    updateMessageProcessingStatus(messageId, isProcessing) {
+        console.log(`Mise à jour du statut de traitement pour le message ${messageId}: ${isProcessing ? 'en cours' : 'terminé'}`);
+        
+        // Vérifier si le messageId est un ID temporaire
+        const isTempId = String(messageId).startsWith('temp-');
+        const realMessageId = isTempId ? messageId.replace('temp-', '') : messageId;
+        
+        // Vérifier si le message existe dans la Map des messages
+        if (!this.messages.has(messageId) && !this.messages.has(realMessageId)) {
+            console.log(`Message ${messageId} non trouvé dans la Map des messages, impossible de mettre à jour le statut de traitement`);
+            return;
+        }
+        
+        // Trouver l'élément du message (essayer avec l'ID original et l'ID réel)
+        let messageElement = this.messageElements.get(messageId);
+        if (!messageElement && realMessageId !== messageId) {
+            messageElement = this.messageElements.get(realMessageId);
+        }
+        
+        if (!messageElement) {
+            console.log(`Élément de message ${messageId} non trouvé dans le DOM, mise à jour ignorée`);
+            return;
+        }
+        
+        // Mettre à jour l'interface
+        const processingIndicator = messageElement.find('.processing-indicator');
+        if (processingIndicator.length) {
+            if (isProcessing) {
+                processingIndicator.show();
+            } else {
+                processingIndicator.hide();
+            }
+            console.log(`Indicateur de traitement ${isProcessing ? 'affiché' : 'masqué'} pour le message ${messageId}`);
+        } else {
+            console.log(`Indicateur de traitement non trouvé pour le message ${messageId}`);
+        }
+        
+        // Mettre à jour les données du message
+        const message = this.messages.get(messageId) || this.messages.get(realMessageId);
+        if (message) {
+            message.isProcessing = isProcessing;
         }
     }
     
@@ -1425,7 +1635,7 @@ class Chat {
         setTimeout(() => {
             messagesToProcess.forEach(msg => {
                 console.log('Traitement du message IA en attente:', msg);
-                // Ajouter le message IA à l'interface
+                // Utiliser addMessage directement pour bénéficier de la logique d'insertion après le message utilisateur
                 this.addMessage(msg, true);
             });
         }, 100);
