@@ -25,10 +25,10 @@ class IA
     /**
      * Collection des chatbox gérées par l'IA
      * 
-     * @var Collection<int, ChatBox>
+     * @var Collection<int, Chatbox>
      */
-    #[ORM\OneToMany(targetEntity: ChatBox::class, mappedBy: 'ia')]
-    private Collection $chatBoxes;
+    #[ORM\OneToMany(targetEntity: Chatbox::class, mappedBy: 'ia')]
+    private Collection $chatboxes;
 
     /**
      * Nom de l'IA
@@ -71,7 +71,7 @@ class IA
      */
     public function __construct()
     {
-        $this->chatBoxes = new ArrayCollection();
+        $this->chatboxes = new ArrayCollection();
     }
 
     /**
@@ -85,23 +85,23 @@ class IA
     /**
      * Récupère la collection des chatbox gérées par l'IA
      * 
-     * @return Collection<int, ChatBox>
+     * @return Collection<int, Chatbox>
      */
-    public function getChatBoxes(): Collection
+    public function getChatboxes(): Collection
     {
-        return $this->chatBoxes;
+        return $this->chatboxes;
     }
 
     /**
      * Ajoute une chatbox à la gestion de l'IA
      * 
-     * @param ChatBox $chatBox La chatbox à ajouter
+     * @param Chatbox $chatbox La chatbox à ajouter
      */
-    public function addChatBox(ChatBox $chatBox): static
+    public function addChatbox(Chatbox $chatbox): static
     {
-        if (!$this->chatBoxes->contains($chatBox)) {
-            $this->chatBoxes->add($chatBox);
-            $chatBox->setIa($this);
+        if (!$this->chatboxes->contains($chatbox)) {
+            $this->chatboxes->add($chatbox);
+            $chatbox->setIa($this);
         }
 
         return $this;
@@ -110,14 +110,14 @@ class IA
     /**
      * Retire une chatbox de la gestion de l'IA
      * 
-     * @param ChatBox $chatBox La chatbox à retirer
+     * @param Chatbox $chatbox La chatbox à retirer
      */
-    public function removeChatBox(ChatBox $chatBox): static
+    public function removeChatbox(Chatbox $chatbox): static
     {
-        if ($this->chatBoxes->removeElement($chatBox)) {
+        if ($this->chatboxes->removeElement($chatbox)) {
             // set the owning side to null (unless already changed)
-            if ($chatBox->getIa() === $this) {
-                $chatBox->setIa(null);
+            if ($chatbox->getIa() === $this) {
+                $chatbox->setIa(null);
             }
         }
 

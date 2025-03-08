@@ -2,11 +2,15 @@ class Chat {
     constructor(config) {
         console.log('Initialisation du chat avec la configuration:', config);
         
-        this.config = config;
-        this.messageContainer = $('#message-container');
-        this.messageForm = $('#message-form');
-        this.messageInput = $('#message-input');
-        this.sendButton = $('#send-button');
+        this.config = {
+            ...config,
+            conversationId: config.id // Ajouter conversationId basé sur l'id existant
+        };
+        
+        this.messageContainer = $('#messages');
+        this.messageForm = $('.message-input');
+        this.messageInput = $('#messageInput');
+        this.sendButton = $('#sendButton');
         this.emojiButton = $('#emoji-button');
         this.emojiPicker = $('#emoji-picker');
         this.typingIndicator = $('#typing-indicator');
@@ -76,13 +80,15 @@ class Chat {
         console.log('Configuration des écouteurs d\'événements');
         
         this.sendButton.on('click', () => {
-            this.sendMessage();
+            const content = this.messageInput.val().trim();
+            this.sendMessage(content);
         });
         
         this.messageInput.on('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                this.sendMessage();
+                const content = this.messageInput.val().trim();
+                this.sendMessage(content);
             }
         });
         
@@ -90,10 +96,10 @@ class Chat {
             this.sendTypingStatus();
         });
         
-        this.reconnectButton.on('click', () => {
-            console.log('Bouton de reconnexion cliqué');
-            this.setupEventSource();
-        });
+        //this.reconnectButton.on('click', () => {
+            //console.log('Bouton de reconnexion cliqué');
+            //this.setupEventSource();
+        //});
         
         // Ajouter un écouteur pour le bouton de test Mercure
         $('#test-mercure-button').on('click', () => {
@@ -172,14 +178,16 @@ class Chat {
         // Envoyer le message au serveur
         console.log('Envoi du message au serveur');
         $.ajax({
-            url: this.config.sendMessageUrl,
+            url: this.config.routes.send,
             method: 'POST',
-            data: {
-                content: content,
-                type: type,
-                conversationId: this.config.conversationId,
-                _token: this.config.csrfToken
+            headers: {
+                'X-CSRF-TOKEN': this.config.csrfToken
             },
+            data: JSON.stringify({
+                content: content,
+                type: type
+            }),
+            contentType: 'application/json',
             success: (response) => {
                 console.log('Réponse du serveur:', response);
                 
@@ -283,46 +291,51 @@ class Chat {
 
     setupEventSource() {
         console.log('Configuration de la source d\'événements Mercure');
-        
-        // Vérifier si l'URL Mercure est configurée
         if (!this.config.mercureUrl) {
             console.error('URL Mercure non configurée');
             return;
         }
-        
+    
         try {
-            // Créer une nouvelle source d'événements
-            const eventSource = new EventSource(this.config.mercureUrl);
-            
-            // Configurer les gestionnaires d'événements
+            // Construire l’URL avec les topics
+            const url = new URL(this.config.mercureUrl);
+    
+            // Exemple : un topic /chat/78 (selon l’ID de votre conversation)
+            url.searchParams.append('topic', `/chat/${this.config.id}`);
+    
+            // Ajouter le token dans l’URL (si votre hub accepte ce mode)
+            if (this.config.subscriberToken) {
+                url.searchParams.append('token', this.config.subscriberToken);
+            }
+    
+            // Créer la source d’événements en autorisant les credentials (CORS)
+            const eventSource = new EventSource(url, { withCredentials: true });
+    
             eventSource.onopen = (event) => {
                 console.log('Connexion Mercure établie');
             };
-            
+    
             eventSource.onmessage = (event) => {
                 console.log('Message Mercure reçu');
                 this.handleMercureMessage(event);
             };
-            
+    
             eventSource.onerror = (event) => {
                 console.error('Erreur de connexion Mercure:', event);
-                
-                // Fermer la connexion en cas d'erreur
                 eventSource.close();
-                
-                // Afficher un message d'erreur
-                this.showErrorMessage('Erreur de connexion au serveur de messages en temps réel. Rechargez la page pour réessayer.');
+                this.showErrorMessage(
+                  'Erreur de connexion au serveur de messages en temps réel. ' +
+                  'Rechargez la page pour réessayer.'
+                );
             };
-            
-            // Stocker la source d'événements
+    
             this.eventSource = eventSource;
-            
             console.log('Source d\'événements Mercure configurée avec succès');
         } catch (error) {
             console.error('Erreur lors de la configuration de la source d\'événements Mercure:', error);
-            
-            // Afficher un message d'erreur
-            this.showErrorMessage('Erreur de connexion au serveur de messages en temps réel: ' + error.message);
+            this.showErrorMessage(
+              'Erreur de connexion au serveur de messages en temps réel: ' + error.message
+            );
         }
     }
 
@@ -353,16 +366,18 @@ class Chat {
     handleMercureMessage(event) {
         try {
             console.log('=== Réception d\'un message Mercure ===');
-            console.log('Event data:', event.data);
+            console.log('Event data brut:', event.data);
             
             const data = JSON.parse(event.data);
-            console.log('Parsed data:', data);
+            console.log('Données Mercure parsées:', data);
             
             // Vérifier si le message est destiné à cette conversation
-            if (data.conversationId !== this.config.conversationId) {
-                console.log(`Message pour une autre conversation (${data.conversationId}), ignoré`);
+            if (data.conversationId && data.conversationId != this.config.id) {
+                console.log(`Message pour une autre conversation (${data.conversationId} vs ${this.config.id}), ignoré`);
                 return;
             }
+            
+            console.log('Message pour cette conversation, traitement en cours...');
             
             // Vérifier si c'est un message de mise à jour de statut de lecture
             if (data.type === 'read_status') {
@@ -388,7 +403,14 @@ class Chat {
             // Vérifier si c'est un message normal
             if (data.type === 'message') {
                 console.log('Message normal reçu via Mercure');
-                const messageData = data.message;
+                
+                // Vérifier si le message est dans le nouveau format avec data.message
+                const messageData = data.message || data;
+                
+                // Log pour déboguer
+                console.log('Message data après traitement:', messageData);
+                console.log('Type de message:', messageData.messageType);
+                console.log('ID du message utilisateur associé:', messageData.userMessageId);
                 
                 // NOUVEAU: Vérifier si le message est déjà dans la liste des messages
                 if (messageData.id && this.messages.has(messageData.id)) {
@@ -580,10 +602,9 @@ class Chat {
         
         // Charger les messages depuis le serveur
         $.ajax({
-            url: this.config.loadMessagesUrl,
+            url: this.config.routes.messages,
             method: 'GET',
             data: {
-                conversationId: this.config.conversationId,
                 page: this.currentPage
             },
             success: (response) => {
@@ -621,8 +642,8 @@ class Chat {
                         this.scrollToBottom();
                     }
                 } else {
-                    console.error('Erreur lors du chargement des messages:', response.error);
-                    this.showErrorMessage('Erreur lors du chargement des messages: ' + response.error);
+                    console.error('Erreur lors du chargement des messages:', response.error || 'Erreur inconnue');
+                    this.showErrorMessage('Erreur lors du chargement des messages: ' + (response.error || 'Erreur inconnue'));
                 }
                 
                 this.isLoading = false;
@@ -660,10 +681,9 @@ class Chat {
         
         // Charger les messages depuis le serveur
         $.ajax({
-            url: this.config.loadMessagesUrl,
+            url: this.config.routes.messages,
             method: 'GET',
             data: {
-                conversationId: this.config.conversationId,
                 page: this.currentPage
             },
             success: (response) => {
@@ -767,7 +787,7 @@ class Chat {
             }
             
             // Mettre à jour les réactions si présentes
-            if (messageData.reactions) {
+            if (messageData.reactions && messageData.reactions.length > 0) {
                 this.updateMessageReactions(messageData.id, messageData.reactions);
             }
             

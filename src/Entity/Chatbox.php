@@ -44,6 +44,14 @@ class Chatbox
     private ?IA $ia = null;
 
     /**
+     * Utilisateur propriétaire de la chatbox
+     */
+    #[ORM\ManyToOne(targetEntity: Personne::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['chatbox:read'])]
+    private ?Personne $user = null;
+
+    /**
      * Date de création de la chatbox
      */
     #[ORM\Column(type: 'datetime', nullable: true)]
@@ -161,6 +169,26 @@ class Chatbox
     public function setIa(?IA $ia): static
     {
         $this->ia = $ia;
+
+        return $this;
+    }
+
+    /**
+     * Récupère l'utilisateur propriétaire de la chatbox
+     */
+    public function getUser(): ?Personne
+    {
+        return $this->user;
+    }
+
+    /**
+     * Définit l'utilisateur propriétaire de la chatbox
+     * 
+     * @param Personne|null $user L'utilisateur à associer
+     */
+    public function setUser(?Personne $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }

@@ -116,9 +116,23 @@ class ChatWebSocketService
                 $data['type'] = 'message';
             }
             
+            // S'assurer que conversationId est présent pour les messages
+            if ($data['type'] === 'message' && !isset($data['conversationId']) && isset($data['message'])) {
+                // Essayer d'extraire l'ID de conversation du topic
+                if (preg_match('/\/chat\/(\d+)/', $topic, $matches)) {
+                    $data['conversationId'] = (int)$matches[1];
+                    $this->logger->info("ID de conversation extrait du topic: " . $data['conversationId']);
+                }
+            }
+            
+            // Convertir les données en JSON
+            $jsonData = json_encode($data);
+            $this->logger->info("Données JSON à publier: " . $jsonData);
+            
+            // Créer l'objet Update pour Mercure
             $update = new Update(
                 $topic,
-                json_encode($data),
+                $jsonData,
                 true  // Private = true pour forcer l'authentification
             );
             
@@ -128,9 +142,10 @@ class ChatWebSocketService
                 'private' => true
             ]);
             
-            $this->hub->publish($update);
+            // Publier l'update via le hub Mercure
+            $id = $this->hub->publish($update);
+            $this->logger->info('Données publiées avec succès, ID: ' . $id);
             
-            $this->logger->info('Données publiées avec succès');
             return true;
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors de la publication WebSocket', [

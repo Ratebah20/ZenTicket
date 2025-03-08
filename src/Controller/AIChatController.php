@@ -38,28 +38,67 @@ class AIChatController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        // Créer une chatbox temporaire pour l'assistance IA
-        $chatbox = new Chatbox();
-        $chatbox->setCreatedAt(new \DateTime());
-        $chatbox->setIsTemporary(true);
+        // Rechercher une chatbox existante pour cet utilisateur
+        $chatbox = $this->entityManager->getRepository(Chatbox::class)
+            ->findOneBy([
+                'user' => $user,
+                'isTemporary' => true
+            ]);
         
-        // Créer et associer une nouvelle IA à la chatbox
-        $ia = $this->createAI("Assistant IA");
-        if ($ia) {
-            $chatbox->setIa($ia);
-            error_log('IA créée avec succès et associée à la chatbox: ' . $ia->getId());
+        // Si aucune chatbox n'existe pour cet utilisateur, en créer une nouvelle
+        if (!$chatbox) {
+            $chatbox = new Chatbox();
+            $chatbox->setCreatedAt(new \DateTime());
+            $chatbox->setIsTemporary(true);
+            $chatbox->setUser($user);
+            
+            // Créer et associer une nouvelle IA à la chatbox
+            $ia = $this->createAI("Assistant IA");
+            if ($ia) {
+                $chatbox->setIa($ia);
+                error_log('IA créée avec succès et associée à la chatbox: ' . $ia->getId());
+            } else {
+                $this->addFlash('warning', 'Impossible de créer une IA pour l\'assistance. Vous pouvez directement créer un ticket.');
+                error_log('Échec de création de l\'IA');
+                return $this->redirectToRoute('app_ticket_new');
+            }
+            
+            // Sauvegarder la chatbox
+            $this->entityManager->persist($chatbox);
+            $this->entityManager->flush();
+            
+            // Envoyer un message de bienvenue uniquement pour les nouvelles chatbox
+            $this->sendWelcomeMessage($chatbox);
+            
+            error_log('Nouvelle chatbox créée pour l\'utilisateur ' . $user->getId() . ' avec ID: ' . $chatbox->getId());
         } else {
-            $this->addFlash('warning', 'Impossible de créer une IA pour l\'assistance. Vous pouvez directement créer un ticket.');
-            error_log('Échec de création de l\'IA');
-            return $this->redirectToRoute('app_ticket_new');
+            error_log('Chatbox existante trouvée pour l\'utilisateur ' . $user->getId() . ' avec ID: ' . $chatbox->getId());
         }
         
-        // Sauvegarder la chatbox
-        $this->entityManager->persist($chatbox);
-        $this->entityManager->flush();
+        $mercureUrl = $_ENV['MERCURE_PUBLIC_URL'] ?? 'http://localhost:3000/.well-known/mercure';
+        $subscriberToken = $this->jwtProvider->getSubscriberToken();
         
-        // Envoyer un message de bienvenue
-        $this->sendWelcomeMessage($chatbox);
+        return $this->render('ai_chat/index.html.twig', [
+            'chatbox' => $chatbox,
+            'mercureUrl' => $mercureUrl,
+            'subscriberToken' => $subscriberToken
+        ]);
+    }
+    
+    #[Route('/{id}', name: 'app_ai_chat_view', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function viewChat(Chatbox $chatbox): Response
+    {
+        // Vérifier que la chatbox appartient à l'utilisateur
+        /** @var Personne $user */
+        $user = $this->getUser();
+        
+        // Vérification assouplie : permettre l'accès même si l'utilisateur n'est pas le propriétaire
+        // mais uniquement si la chatbox est temporaire (pour l'aide IA)
+        if ($chatbox->getUser() && $chatbox->getUser()->getId() !== $user->getId() && !$chatbox->isTemporary()) {
+            $this->addFlash('error', 'Vous n\'avez pas accès à cette conversation');
+            return $this->redirectToRoute('app_ai_chat');
+        }
         
         $mercureUrl = $_ENV['MERCURE_PUBLIC_URL'] ?? 'http://localhost:3000/.well-known/mercure';
         $subscriberToken = $this->jwtProvider->getSubscriberToken();
@@ -75,42 +114,53 @@ class AIChatController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function sendMessage(Request $request, Chatbox $chatbox): JsonResponse
     {
-        if (!$chatbox->getIa() || !$chatbox->isTemporary()) {
-            return $this->json(['error' => 'Chatbox invalide'], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!$this->isCsrfTokenValid('ai_chat', $request->headers->get('X-CSRF-TOKEN'))) {
-            return $this->json(['error' => 'Token CSRF invalide'], Response::HTTP_FORBIDDEN);
-        }
-
-        $content = json_decode($request->getContent(), true);
-        
-        if (empty($content['message'])) {
-            return $this->json(['error' => 'Le message ne peut pas être vide'], Response::HTTP_BAD_REQUEST);
-        }
-
+        // Vérifier que la chatbox appartient à l'utilisateur
         /** @var Personne $user */
         $user = $this->getUser();
         
-        // Vérifier que l'utilisateur est bien connecté
-        if (!$user) {
-            return $this->json(['error' => 'Utilisateur non authentifié'], Response::HTTP_UNAUTHORIZED);
+        // Vérification assouplie : permettre l'accès même si l'utilisateur n'est pas le propriétaire
+        // mais uniquement si la chatbox est temporaire (pour l'aide IA)
+        if ($chatbox->getUser() && $chatbox->getUser()->getId() !== $user->getId() && !$chatbox->isTemporary()) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Vous n\'avez pas accès à cette conversation'
+            ], Response::HTTP_FORBIDDEN);
+        }
+        
+        // Vérifier le token CSRF (envoyé dans l'en-tête X-CSRF-TOKEN)
+        if (!$this->isCsrfTokenValid('ai_chat', $request->headers->get('X-CSRF-TOKEN'))) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Token CSRF invalide'
+            ], Response::HTTP_FORBIDDEN);
         }
         
         try {
-            // Créer et sauvegarder le message utilisateur
+            $data = json_decode($request->getContent(), true);
+            
+            if (!isset($data['content']) || trim($data['content']) === '') {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Le contenu du message ne peut pas être vide'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+            
+            // Créer le message utilisateur
             $message = new Message();
             $message->setChatbox($chatbox)
-                    ->setMessage($content['message'])
+                    ->setMessage($data['content'])
                     ->setMessageType(MessageType::USER)
                     ->setTimestamp(new \DateTime())
                     ->setSenderId($user->getId());
-
+            
+            // Persister le message
             $this->entityManager->persist($message);
             $this->entityManager->flush();
             
             // Préparer la réponse pour le message utilisateur
             $response = [
+                'success' => true,
+                'messageId' => $message->getId(),
                 'id' => $message->getId(),
                 'content' => $message->getMessage(),
                 'messageType' => $message->getMessageType()->value,
@@ -120,13 +170,13 @@ class AIChatController extends AbstractController
                 'isRead' => false
             ];
             
-            // Générer une réponse IA de manière asynchrone en utilisant un thread séparé
-            // pour ne pas bloquer la réponse au client
+            // Générer la réponse IA de manière asynchrone
             $this->aiService->handleUserMessage($message);
-
+            
             return $this->json($response);
         } catch (\Exception $e) {
             return $this->json([
+                'success' => false,
                 'error' => 'Erreur lors de l\'envoi du message',
                 'details' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -138,7 +188,18 @@ class AIChatController extends AbstractController
     public function getMessages(Chatbox $chatbox, Request $request): JsonResponse
     {
         if (!$chatbox->isTemporary()) {
-            return $this->json(['error' => 'Chatbox invalide'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['success' => false, 'error' => 'Chatbox invalide'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Vérifier que l'utilisateur est le propriétaire de la chatbox
+        /** @var Personne $user */
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json(['success' => false, 'error' => 'Utilisateur non authentifié'], Response::HTTP_UNAUTHORIZED);
+        }
+        
+        if ($chatbox->getUser() && $chatbox->getUser()->getId() !== $user->getId()) {
+            return $this->json(['success' => false, 'error' => 'Vous n\'êtes pas autorisé à accéder à cette conversation'], Response::HTTP_FORBIDDEN);
         }
 
         $page = $request->query->getInt('page', 1);
@@ -156,6 +217,7 @@ class AIChatController extends AbstractController
             ->getResult();
 
         return $this->json([
+            'success' => true,
             'messages' => array_map(fn(Message $message) => [
                 'id' => $message->getId(),
                 'content' => $message->getMessage(),
@@ -191,11 +253,11 @@ class AIChatController extends AbstractController
     public function handleTyping(Request $request, Chatbox $chatbox): JsonResponse
     {
         if (!$chatbox->isTemporary()) {
-            return $this->json(['error' => 'Chatbox invalide'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['success' => false, 'error' => 'Chatbox invalide'], Response::HTTP_BAD_REQUEST);
         }
 
         if (!$this->isCsrfTokenValid('ai_chat', $request->headers->get('X-CSRF-TOKEN'))) {
-            return $this->json(['error' => 'Token CSRF invalide'], Response::HTTP_FORBIDDEN);
+            return $this->json(['success' => false, 'error' => 'Token CSRF invalide'], Response::HTTP_FORBIDDEN);
         }
 
         /** @var Personne $user */
@@ -203,7 +265,7 @@ class AIChatController extends AbstractController
         
         // Vérifier que l'utilisateur est bien connecté
         if (!$user) {
-            return $this->json(['error' => 'Utilisateur non authentifié'], Response::HTTP_UNAUTHORIZED);
+            return $this->json(['success' => false, 'error' => 'Utilisateur non authentifié'], Response::HTTP_UNAUTHORIZED);
         }
         
         try {
@@ -216,6 +278,7 @@ class AIChatController extends AbstractController
             return $this->json(['success' => true]);
         } catch (\Exception $e) {
             return $this->json([
+                'success' => false,
                 'error' => 'Erreur lors du traitement de l\'événement de frappe',
                 'details' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);

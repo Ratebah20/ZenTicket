@@ -54,7 +54,10 @@ class ChatAIService
         try {
             $this->logger->info("=== Début de la génération de réponse IA ===");
             $this->logger->info("Message utilisateur: " . $userMessage->getMessage());
+            $this->logger->info("Chatbox ID: " . $chatbox->getId());
+            $this->logger->info("IA ID: " . $ia->getId());
             
+            // Appeler l'API OpenAI
             $content = $this->callOpenAI($userMessage, $ia);
             
             if ($content) {
@@ -68,12 +71,11 @@ class ChatAIService
                         ->setSenderId($ia->getId())
                         ->setUserMessageId($userMessage->getId()); // Associer l'ID du message utilisateur
                 
-                $this->logger->info("Message IA créé avec l'ID: " . $aiMessage->getId());
-                
-                // Nous ne publions plus le message ici, cela sera fait dans handleUserMessage
-                // après la persistance en base de données
+                $this->logger->info("Message IA créé avec succès");
                 
                 return $aiMessage;
+            } else {
+                $this->logger->error("Aucune réponse reçue de l'API OpenAI");
             }
             
             return null;
@@ -106,8 +108,10 @@ class ChatAIService
         $this->logger->info("IA trouvée: " . $ia->getId());
         $this->logger->info("Nom de l'IA: " . $ia->getNom());
         $this->logger->info("Modèle: " . $ia->getModel());
-        $this->logger->info("Clé API: " . substr($ia->getApiKey(), 0, 10) . "...");
-
+        
+        // Vérifier si la chatbox est temporaire
+        $this->logger->info("La chatbox est-elle temporaire ? " . ($chatbox->isTemporary() ? 'Oui' : 'Non'));
+        
         // Vérifier si le message nécessite une réponse de l'IA
         if ($userMessage->getMessageType() !== MessageType::USER) {
             $this->logger->info("Message non utilisateur, ignoré");
@@ -116,41 +120,55 @@ class ChatAIService
 
         try {
             $this->logger->info("Génération de la réponse IA...");
+            
+            // Appeler l'API OpenAI pour générer une vraie réponse
             $aiMessage = $this->generateResponse($userMessage);
             
-            if ($aiMessage) {
-                $this->logger->info("Réponse IA générée avec succès: " . $aiMessage->getMessage());
+            if (!$aiMessage) {
+                $this->logger->error("Échec de la génération de la réponse IA");
+                return;
+            }
+            
+            $this->logger->info("Message IA créé: " . $aiMessage->getMessage());
+            
+            // Persister le message dans la base de données
+            $this->entityManager->persist($aiMessage);
+            $this->entityManager->flush();
+            $this->logger->info("Message IA persisté avec ID: " . $aiMessage->getId());
+            
+            // Publier le message via WebSocket
+            $this->logger->info("Publication de la réponse via WebSocket");
+            try {
+                // Préparer les données du message
+                $messageData = [
+                    'id' => $aiMessage->getId(),
+                    'content' => $aiMessage->getMessage(),
+                    'messageType' => $aiMessage->getMessageType()->value,
+                    'senderId' => $aiMessage->getSenderId(),
+                    'timestamp' => $aiMessage->getTimestamp()->format('c'),
+                    'mercureId' => uniqid('mercure_', true),
+                    'reactions' => [],
+                    'isRead' => false,
+                    'userMessageId' => $aiMessage->getUserMessageId()
+                ];
                 
-                // Persister le message dans la base de données
-                $this->entityManager->persist($aiMessage);
-                $this->entityManager->flush();
-                $this->logger->info("Message IA persisté avec ID: " . $aiMessage->getId());
+                // Structure complète du message pour Mercure
+                $mercureData = [
+                    'type' => 'message',
+                    'conversationId' => $chatbox->getId(),
+                    'message' => $messageData
+                ];
                 
-                // Publier le message via WebSocket avec une priorité élevée
-                $this->logger->info("Publication de la réponse via WebSocket");
-                try {
-                    // Ajouter un identifiant unique pour le suivi des messages
-                    $messageData = [
-                        'id' => $aiMessage->getId(),
-                        'content' => $aiMessage->getMessage(),
-                        'messageType' => $aiMessage->getMessageType()->value,
-                        'senderId' => $aiMessage->getSenderId(),
-                        'timestamp' => $aiMessage->getTimestamp()->format('c'),
-                        'mercureId' => uniqid('mercure_', true), // Identifiant unique pour Mercure
-                        'reactions' => [],
-                        'isRead' => false,
-                        'userMessageId' => $aiMessage->getUserMessageId() // Associer l'ID du message utilisateur
-                    ];
-                    
-                    // Publication unique du message
-                    $this->webSocketService->publishMessage($messageData, "/chat/{$chatbox->getId()}");
-                    $this->logger->info("Réponse publiée avec succès");
-                } catch (\Exception $e) {
-                    $this->logger->error("Erreur lors de la publication WebSocket: " . $e->getMessage());
-                    $this->logger->error("Trace: " . $e->getTraceAsString());
-                }
-            } else {
-                $this->logger->warning("Aucune réponse générée par l'IA");
+                // Publication du message sur le topic /chat/{id}
+                $topic = "/chat/{$chatbox->getId()}";
+                $result = $this->webSocketService->publishMessage($mercureData, $topic);
+                
+                $this->logger->info("Résultat de la publication: " . ($result ? 'Succès' : 'Échec'));
+                $this->logger->info("Réponse publiée sur le topic: " . $topic);
+                $this->logger->info("Structure du message: " . json_encode($mercureData));
+            } catch (\Exception $e) {
+                $this->logger->error("Erreur lors de la publication WebSocket: " . $e->getMessage());
+                $this->logger->error("Trace: " . $e->getTraceAsString());
             }
         } catch (\Exception $e) {
             $this->logger->error("Erreur lors de la génération de la réponse IA: " . $e->getMessage());
@@ -159,6 +177,14 @@ class ChatAIService
         }
         
         $this->logger->info("=== Fin du traitement du message utilisateur ===");
+    }
+
+    /**
+     * Récupère le service WebSocket
+     */
+    public function getWebSocketService(): ChatWebSocketService
+    {
+        return $this->webSocketService;
     }
 
     private function handleOpenAIError(int $statusCode, array $errorData): void

@@ -25,7 +25,7 @@ class Technicien extends Utilisateur
      */
     #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'technicien')]
     #[Groups(['technicien:read'])]
-    private Collection $tickets;
+    private Collection $ticketsAssignes;
 
     /**
      * Spécialité du technicien
@@ -35,35 +35,10 @@ class Technicien extends Utilisateur
     #[Assert\Length(max: 50)]
     private ?string $specialite = null;
 
-    /**
-     * Niveau d'expertise du technicien (junior, senior, expert)
-     */
-    #[ORM\Column(length: 20, nullable: true)]
-    #[Assert\Length(max: 20)]
-    #[Groups(['technicien:read', 'technicien:write'])]
-    private ?string $niveau = null;
-
-    /**
-     * Disponibilité du technicien (disponible, occupé, absent)
-     */
-    #[ORM\Column(length: 20)]
-    #[Groups(['technicien:read', 'technicien:write', 'ticket:read'])]
-    private ?string $disponibilite = 'disponible';
-
-    /**
-     * Nombre maximum de tickets que le technicien peut gérer simultanément
-     */
-    #[ORM\Column]
-    #[Assert\Positive(message: 'La charge maximale doit être un nombre positif')]
-    #[Groups(['technicien:read', 'technicien:write'])]
-    private ?int $chargeMaximale = 5;
-
     public function __construct()
     {
         parent::__construct();
-        $this->tickets = new ArrayCollection();
-        $this->disponibilite = 'disponible';
-        $this->chargeMaximale = 5;
+        $this->ticketsAssignes = new ArrayCollection();
         $this->addRole('ROLE_TECHNICIEN');
     }
 
@@ -78,60 +53,27 @@ class Technicien extends Utilisateur
         return $this;
     }
 
-    public function getNiveau(): ?string
-    {
-        return $this->niveau;
-    }
-
-    public function setNiveau(?string $niveau): static
-    {
-        $this->niveau = $niveau;
-        return $this;
-    }
-
-    public function getDisponibilite(): ?string
-    {
-        return $this->disponibilite;
-    }
-
-    public function setDisponibilite(string $disponibilite): static
-    {
-        $this->disponibilite = $disponibilite;
-        return $this;
-    }
-
-    public function getChargeMaximale(): ?int
-    {
-        return $this->chargeMaximale;
-    }
-
-    public function setChargeMaximale(int $chargeMaximale): static
-    {
-        $this->chargeMaximale = $chargeMaximale;
-        return $this;
-    }
-
     /**
      * @return Collection<int, Ticket>
      */
-    public function getTickets(): Collection
+    public function getTicketsAssignes(): Collection
     {
-        return $this->tickets;
+        return $this->ticketsAssignes;
     }
 
-    public function addTicket(Ticket $ticket): static
+    public function addTicketAssigne(Ticket $ticket): static
     {
-        if (!$this->tickets->contains($ticket)) {
-            $this->tickets->add($ticket);
+        if (!$this->ticketsAssignes->contains($ticket)) {
+            $this->ticketsAssignes->add($ticket);
             $ticket->setTechnicien($this);
         }
 
         return $this;
     }
 
-    public function removeTicket(Ticket $ticket): static
+    public function removeTicketAssigne(Ticket $ticket): static
     {
-        if ($this->tickets->removeElement($ticket)) {
+        if ($this->ticketsAssignes->removeElement($ticket)) {
             if ($ticket->getTechnicien() === $this) {
                 $ticket->setTechnicien(null);
             }
