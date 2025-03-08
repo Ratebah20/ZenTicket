@@ -60,7 +60,7 @@ class TicketController extends AbstractController
                 $messages = $entityManager->getRepository(Message::class)
                     ->findBy(['chatbox' => $chatbox, 'messageType' => MessageType::USER], ['timestamp' => 'ASC']);
                 
-                if (count($messages) > 0) {
+                if (\count($messages) > 0) {
                     // Construire une description à partir des messages
                     $description = "Conversation avec l'assistant IA:\n\n";
                     foreach ($messages as $message) {
@@ -382,7 +382,7 @@ class TicketController extends AbstractController
                 $this->addFlash('success', 'Le statut du ticket a été mis à jour.');
             } catch (\Exception $e) {
                 $logger->error('Erreur lors du changement de statut : ' . $e->getMessage(), [
-                    'exception' => get_class($e),
+                    'exception' => \get_class($e),
                     'message' => $e->getMessage(),
                     'file' => $e->getFile(),
                     'line' => $e->getLine()
