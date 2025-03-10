@@ -15,7 +15,7 @@ security:
             security: false
         
         login:
-            pattern: ^/api/login
+            pattern: ^/api/(login|auth)
             stateless: true
             json_login:
                 check_path: /api/login_check
@@ -25,7 +25,10 @@ security:
         api:
             pattern: ^/api
             stateless: true
-            jwt: ~
+            # Commenté temporairement pour le développement
+            # jwt: ~
+            # Permettre l'accès public temporairement
+            security: false
         
         main:
             lazy: true
@@ -46,8 +49,11 @@ security:
     # Note: Only the *first* access control that matches will be used
     access_control:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth, roles: PUBLIC_ACCESS }
         - { path: ^/api/doc, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+        # Commenté temporairement pour le développement
+        # - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api, roles: PUBLIC_ACCESS } # Accès public temporaire
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/profile, roles: ROLE_USER }
 

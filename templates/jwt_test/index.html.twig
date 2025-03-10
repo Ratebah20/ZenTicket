@@ -1,0 +1,199 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Test JWT - ZenTicket{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        body {
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin-top: 30px;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="container">
+        <h1 class="mb-4">Test d'authentification JWT</h1>
+        
+        <div id="result" class="mb-4"></div>
+        
+        <div id="login-section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Connexion</h2>
+                </div>
+                <div class="card-body">
+                    <form id="login-form">
+                        <input type="hidden" name="_csrf_token" id="csrf_token" value="{{ csrf_token }}">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Mot de passe</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Se connecter</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div id="api-section" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Test de l'API</h2>
+                </div>
+                <div class="card-body">
+                    <p>Vous êtes connecté et avez un token JWT valide.</p>
+                    <button id="api-test-btn" class="btn btn-success mb-3">Tester l'accès à l'API</button>
+                    <button id="user-info-btn" class="btn btn-info mb-3 ms-2">Informations utilisateur</button>
+                    <button id="logout-btn" class="btn btn-outline-danger">Se déconnecter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('login-form');
+            const apiTestBtn = document.getElementById('api-test-btn');
+            const userInfoBtn = document.getElementById('user-info-btn');
+            const resultDiv = document.getElementById('result');
+            const csrfToken = document.getElementById('csrf_token').value;
+            
+            // Préremplir avec un utilisateur valide des fixtures
+            document.getElementById('email').value = 'jean.dupont@3innov.fr';
+            document.getElementById('password').value = 'user123';
+            
+            let jwtToken = localStorage.getItem('jwt_token');
+            
+            // Mettre à jour l'interface en fonction de l'état de connexion
+            function updateUI() {
+                if (jwtToken) {
+                    document.getElementById('login-section').style.display = 'none';
+                    document.getElementById('api-section').style.display = 'block';
+                } else {
+                    document.getElementById('login-section').style.display = 'block';
+                    document.getElementById('api-section').style.display = 'none';
+                }
+            }
+            
+            // Initialiser l'interface
+            updateUI();
+            
+            // Gérer la soumission du formulaire de connexion
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                // Afficher les données envoyées pour le débogage
+                console.log('Tentative de connexion avec:', { email, password });
+                
+                // Utiliser notre nouveau endpoint d'authentification personnalisé
+                fetch('/api/auth', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        username: email,
+                        password: password
+                    })
+                })
+                .then(response => {
+                    console.log('Statut de la réponse:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Données reçues:', data);
+                    if (data.token) {
+                        jwtToken = data.token;
+                        localStorage.setItem('jwt_token', jwtToken);
+                        resultDiv.innerHTML = '<div class="alert alert-success">Connexion réussie! Token JWT obtenu.</div>';
+                        updateUI();
+                    } else {
+                        resultDiv.innerHTML = '<div class="alert alert-danger">Échec de la connexion: ' + (data.message || JSON.stringify(data)) + '</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    resultDiv.innerHTML = '<div class="alert alert-danger">Erreur: ' + error.message + '</div>';
+                });
+            });
+            
+            // Tester l'accès à l'API avec le token JWT
+            apiTestBtn.addEventListener('click', function() {
+                fetch('/api', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwtToken
+                    }
+                })
+                .then(response => {
+                    console.log('Statut de la réponse API:', response.status);
+                    if (!response.ok) {
+                        throw new Error('Réponse du serveur: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Données API reçues:', data);
+                    resultDiv.innerHTML = '<div class="alert alert-success">Accès API réussi!</div><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                })
+                .catch(error => {
+                    console.error('Erreur API:', error);
+                    resultDiv.innerHTML = '<div class="alert alert-danger">Erreur d\'accès à l\'API: ' + error.message + '</div>';
+                });
+            });
+            
+            // Obtenir les informations de l'utilisateur
+            userInfoBtn.addEventListener('click', function() {
+                fetch('/api/user', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + jwtToken
+                    }
+                })
+                .then(response => {
+                    console.log('Statut de la réponse User Info:', response.status);
+                    if (!response.ok) {
+                        throw new Error('Réponse du serveur: ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Informations utilisateur reçues:', data);
+                    resultDiv.innerHTML = '<div class="alert alert-success">Informations utilisateur récupérées avec succès!</div><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                })
+                .catch(error => {
+                    console.error('Erreur User Info:', error);
+                    resultDiv.innerHTML = '<div class="alert alert-danger">Erreur lors de la récupération des informations utilisateur: ' + error.message + '</div>';
+                });
+            });
+            
+            // Bouton de déconnexion
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                localStorage.removeItem('jwt_token');
+                jwtToken = null;
+                resultDiv.innerHTML = '<div class="alert alert-info">Déconnecté</div>';
+                updateUI();
+            });
+        });
+    </script>
+{% endblock %}
