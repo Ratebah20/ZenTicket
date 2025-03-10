@@ -39,9 +39,9 @@ class Mail
     private ?\DateTimeInterface $timestamp = null;
 
     /**
-     * Utilisateur ayant envoyé le mail
+     * Utilisateur destinataire du mail
      */
-    #[ORM\ManyToOne(inversedBy: 'mails')]
+    #[ORM\ManyToOne(inversedBy: 'mailsRecus')]
     private ?Utilisateur $utilisateur = null;
 
     /**
@@ -113,7 +113,7 @@ class Mail
     }
 
     /**
-     * Récupère l'utilisateur ayant envoyé le mail
+     * Récupère l'utilisateur ayant reçu le mail
      */
     public function getUtilisateur(): ?Utilisateur
     {
@@ -121,9 +121,9 @@ class Mail
     }
 
     /**
-     * Définit l'utilisateur ayant envoyé le mail
+     * Définit l'utilisateur ayant reçu le mail
      * 
-     * @param Utilisateur|null $utilisateur L'utilisateur expéditeur
+     * @param Utilisateur|null $utilisateur L'utilisateur destinataire
      */
     public function setUtilisateur(?Utilisateur $utilisateur): static
     {

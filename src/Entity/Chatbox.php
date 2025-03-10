@@ -39,7 +39,7 @@ class Chatbox
     #[Groups(['chatbox:item:read'])]
     private Collection $messages;
 
-    #[ORM\ManyToOne(inversedBy: 'chatBoxes')]
+    #[ORM\ManyToOne(inversedBy: 'chatboxes')]
     #[Groups(['chatbox:read', 'chatbox:write'])]
     private ?IA $ia = null;
 

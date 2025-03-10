@@ -70,6 +70,7 @@ class ChatController extends AbstractController
             ->getResult();
 
         return $this->json([
+            'success' => true,
             'messages' => array_map(fn(Message $message) => [
                 'id' => $message->getId(),
                 'content' => $message->getMessage(),
@@ -105,7 +106,7 @@ class ChatController extends AbstractController
         $content = json_decode($request->getContent(), true);
         error_log("Contenu reçu : " . json_encode($content));
         
-        if (empty($content['message'])) {
+        if (empty($content['content'])) {
             error_log("Message vide");
             return $this->json(['error' => 'Message cannot be empty'], Response::HTTP_BAD_REQUEST);
         }
@@ -117,7 +118,7 @@ class ChatController extends AbstractController
         // Créer et sauvegarder le message utilisateur
         $message = new Message();
         $message->setChatbox($chatbox)
-                ->setMessage($content['message'])
+                ->setMessage($content['content'])
                 ->setMessageType(MessageType::USER)
                 ->setTimestamp(new \DateTime())
                 ->setSenderId($user->getId());
@@ -151,6 +152,8 @@ class ChatController extends AbstractController
         error_log("=== Fin de la méthode sendMessage ===");
 
         return $this->json([
+            'success' => true,
+            'messageId' => $message->getId(),
             'id' => $message->getId(),
             'content' => $message->getMessage(),
             'messageType' => $message->getMessageType()->value,

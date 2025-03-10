@@ -458,6 +458,11 @@ class Chat {
                     this.deleteMessage(data.messageId);
                     break;
                     
+                case 'typing':
+                    console.log('Événement de frappe reçu');
+                    this.handleTypingEvent(data);
+                    break;
+                    
                 case 'message':
                     console.log('Message reçu via Mercure');
                     
@@ -721,6 +726,9 @@ class Chat {
             data: {
                 page: this.currentPage
             },
+            headers: {
+                'X-CSRF-TOKEN': this.config.csrfToken
+            },
             success: (response) => {
                 console.log('Messages initiaux chargés:', response);
                 
@@ -764,6 +772,8 @@ class Chat {
             },
             error: (xhr, status, error) => {
                 console.error('Erreur AJAX lors du chargement des messages:', error);
+                console.error('Statut de la réponse:', xhr.status);
+                console.error('Réponse texte:', xhr.responseText);
                 
                 // Supprimer l'indicateur de chargement
                 loadingIndicator.remove();
@@ -799,6 +809,9 @@ class Chat {
             method: 'GET',
             data: {
                 page: this.currentPage
+            },
+            headers: {
+                'X-CSRF-TOKEN': this.config.csrfToken
             },
             success: (response) => {
                 console.log('Messages supplémentaires chargés:', response);
@@ -1536,6 +1549,31 @@ class Chat {
         }, 5000);
     }
     
+    showSuccessMessage(message, timeout = 5000) {
+        console.log('Succès:', message);
+        
+        // Créer un élément d'alerte
+        const alertElement = $('<div class="alert alert-success alert-dismissible fade show" role="alert"></div>');
+        alertElement.text(message);
+        
+        // Ajouter un bouton de fermeture
+        const closeButton = $('<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>');
+        alertElement.append(closeButton);
+        
+        // Ajouter l'alerte au conteneur de messages
+        this.messageContainer.append(alertElement);
+        
+        // Défiler vers le bas pour montrer l'alerte
+        this.scrollToBottom();
+        
+        // Masquer automatiquement après le délai spécifié
+        if (timeout > 0) {
+            setTimeout(() => {
+                alertElement.alert('close');
+            }, timeout);
+        }
+    }
+
     resetInputHeight() {
         this.messageInput.css('height', 'auto');
     }
@@ -1588,10 +1626,10 @@ class Chat {
             let pendingMessages;
             if (userMessageId.startsWith('temp-')) {
                 pendingMessages = this.pendingAIMessagesByTempUserMessage.get(userMessageId) || [];
-                this.pendingAIMessagesByTempUserMessage.delete(userMessageId);
+                this.pendingAIMessagesByTempUserMessage.set(userMessageId, []);
             } else {
                 pendingMessages = this.pendingAIMessagesByUserMessage.get(userMessageId) || [];
-                this.pendingAIMessagesByUserMessage.delete(userMessageId);
+                this.pendingAIMessagesByUserMessage.set(userMessageId, []);
             }
             
             // Afficher tous les messages IA en attente

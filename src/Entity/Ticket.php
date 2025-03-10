@@ -77,7 +77,7 @@ class Ticket
     #[Groups(['ticket:read', 'ticket:write', 'technicien:item:read', 'categorie:item:read'])]
     private ?Utilisateur $utilisateur = null;
 
-    #[ORM\ManyToOne(inversedBy: 'tickets')]
+    #[ORM\ManyToOne(inversedBy: 'ticketsAssignes')]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['ticket:read', 'ticket:write', 'utilisateur:item:read', 'categorie:item:read'])]
     private ?Technicien $technicien = null;

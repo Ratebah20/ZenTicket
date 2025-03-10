@@ -28,10 +28,19 @@ class Utilisateur extends Personne implements UserInterface, PasswordAuthenticat
     #[Groups(['utilisateur:item:read'])]
     private Collection $tickets;
 
+    /**
+     * Collection des mails reçus par cet utilisateur
+     * 
+     * @var Collection<int, Mail>
+     */
+    #[ORM\OneToMany(mappedBy: 'utilisateur', targetEntity: Mail::class)]
+    private Collection $mailsRecus;
+
     public function __construct()
     {
         parent::__construct();
         $this->tickets = new ArrayCollection();
+        $this->mailsRecus = new ArrayCollection();
         $this->addRole('ROLE_USER');
     }
 
@@ -76,6 +85,36 @@ class Utilisateur extends Personne implements UserInterface, PasswordAuthenticat
         if ($this->tickets->removeElement($ticket)) {
             if ($ticket->getUtilisateur() === $this) {
                 $ticket->setUtilisateur(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Mail>
+     */
+    public function getMailsRecus(): Collection
+    {
+        return $this->mailsRecus;
+    }
+
+    public function addMailRecu(Mail $mail): static
+    {
+        if (!$this->mailsRecus->contains($mail)) {
+            $this->mailsRecus->add($mail);
+            $mail->setUtilisateur($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMailRecu(Mail $mail): static
+    {
+        if ($this->mailsRecus->removeElement($mail)) {
+            // set the owning side to null (unless already changed)
+            if ($mail->getUtilisateur() === $this) {
+                $mail->setUtilisateur(null);
             }
         }
 
