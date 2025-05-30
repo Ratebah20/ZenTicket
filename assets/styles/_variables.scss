@@ -1,0 +1,35 @@
+// Variables pour le thème sombre
+$bg-dark: #0f111a;
+$bg-card: #1a1d29;
+$bg-hover: rgba(255, 255, 255, 0.05);
+$text-primary: #ffffff;
+$text-secondary: #a0a0a0;
+$border-color: #2a2d3a;
+
+// Couleurs principales
+$primary: #ff6b35;
+$success: #4caf50;
+$warning: #ffc107;
+$danger: #f44336;
+$info: #2196f3;
+
+// Breakpoints
+$breakpoints: (
+    'xs': 0,
+    'sm': 576px,
+    'md': 768px,
+    'lg': 992px,
+    'xl': 1200px,
+    'xxl': 1400px
+);
+
+// Mixin responsive
+@mixin respond-to($breakpoint) {
+    @media (min-width: map-get($breakpoints, $breakpoint)) {
+        @content;
+    }
+}
+
+// Sidebar
+$sidebar-width: 250px;
+$sidebar-collapsed-width: 70px;

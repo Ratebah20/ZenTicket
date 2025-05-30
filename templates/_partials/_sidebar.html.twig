@@ -1,0 +1,108 @@
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <a href="{{ path('app_home') }}" class="sidebar-brand">
+            <div class="brand-icon">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+            <span class="brand-text">ZenTicket</span>
+        </a>
+    </div>
+
+    <div class="sidebar-menu">
+        <!-- Menu Principal -->
+        <div class="menu-section">
+            <h6 class="menu-section-title">MENU PRINCIPAL</h6>
+            
+            {% set currentRoute = app.request.attributes.get('_route') %}
+            
+            <a href="{{ path('app_home') }}" 
+               class="menu-item {{ currentRoute == 'app_home' ? 'active' : '' }}">
+                <i class="fas fa-home"></i>
+                <span>Accueil</span>
+            </a>
+            
+            {% if is_granted('ROLE_USER') and not is_granted('ROLE_ADMIN') and not is_granted('ROLE_TECHNICIEN') %}
+                <a href="{{ path('app_ticket_new') }}" 
+                   class="menu-item {{ currentRoute == 'app_ticket_new' ? 'active' : '' }}">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Nouveau Ticket</span>
+                </a>
+                
+                <a href="{{ path('app_profile_tickets') }}" 
+                   class="menu-item {{ currentRoute == 'app_profile_tickets' ? 'active' : '' }}">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>Mes Tickets</span>
+                </a>
+                
+                <a href="{{ path('app_ai_chat') }}" 
+                   class="menu-item {{ currentRoute == 'app_ai_chat' ? 'active' : '' }}">
+                    <i class="fas fa-robot"></i>
+                    <span>Assistant IA</span>
+                </a>
+            {% endif %}
+            
+            {% if is_granted('ROLE_TECHNICIEN') %}
+                <a href="{{ path('technicien_dashboard') }}" 
+                   class="menu-item {{ currentRoute == 'technicien_dashboard' ? 'active' : '' }}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Tableau de bord</span>
+                </a>
+                
+                <a href="{{ path('technicien_tickets_list') }}" 
+                   class="menu-item {{ currentRoute == 'technicien_tickets_list' ? 'active' : '' }}">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Tickets assignés</span>
+                </a>
+            {% endif %}
+        </div>
+
+        {% if is_granted('ROLE_ADMIN') %}
+        <!-- Administration -->
+        <div class="menu-section">
+            <h6 class="menu-section-title">ADMINISTRATION</h6>
+            
+            <a href="{{ path('admin_dashboard') }}" 
+               class="menu-item {{ currentRoute == 'admin_dashboard' ? 'active' : '' }}">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Tableau de bord</span>
+            </a>
+            
+            <a href="{{ path('admin_technicien_new') }}" 
+               class="menu-item {{ currentRoute == 'admin_technicien_new' ? 'active' : '' }}">
+                <i class="fas fa-user-plus"></i>
+                <span>Nouveau technicien</span>
+            </a>
+            
+            <a href="{{ path('app_rapport_index') }}" 
+               class="menu-item {{ currentRoute starts with 'app_rapport_' ? 'active' : '' }}">
+                <i class="fas fa-file-alt"></i>
+                <span>Rapports</span>
+            </a>
+        </div>
+        {% endif %}
+
+        {% if is_granted('ROLE_TECHNICIEN') %}
+        <!-- Rapports -->
+        <div class="menu-section">
+            <h6 class="menu-section-title">RAPPORTS</h6>
+            
+            <a href="{{ path('app_rapport_index') }}" 
+               class="menu-item {{ currentRoute == 'app_rapport_index' ? 'active' : '' }}">
+                <i class="fas fa-file-alt"></i>
+                <span>Tous les rapports</span>
+            </a>
+            
+            <a href="{{ path('app_rapport_intervention_new') }}" 
+               class="menu-item {{ currentRoute == 'app_rapport_intervention_new' ? 'active' : '' }}">
+                <i class="fas fa-plus"></i>
+                <span>Nouveau rapport</span>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</nav>
+
+<!-- Bouton toggle sidebar pour mobile -->
+<button id="sidebarToggle" class="sidebar-toggle d-lg-none">
+    <i class="fas fa-bars"></i>
+</button>

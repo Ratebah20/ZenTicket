@@ -1,0 +1,378 @@
+PS C:\wamp64\www\3INNOV> npm run dev
+
+> dev
+> encore dev
+
+Running webpack ...
+
+ WARN  Compiled with 22 warnings                                                                21:04:05
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 1, column 8 of file:///C:/wamp64/www/3INNOV/assets/styles/app.scss:1:8:     
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+1 | @import 'variables';
+
+
+assets\styles\app.scss 2:9  root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 4, column 8 of file:///C:/wamp64/www/3INNOV/assets/styles/app.scss:4:8:     
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+4 | @import '~bootstrap/scss/bootstrap';
+
+
+assets\styles\app.scss 5:9  root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 10, column 29 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_functions.scss:10:29:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use math.unit instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+10 |     @if $prev-num == null or unit($num) == "%" or unit($prev-num) == "%" {
+
+
+node_modules\bootstrap\scss\_functions.scss 11:30  -assert-ascending()
+node_modules\bootstrap\scss\_variables.scss 494:1  @import
+node_modules\bootstrap\scss\bootstrap.scss 8:9     @import
+assets\styles\app.scss 5:9                         root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 10, column 50 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_functions.scss:10:50:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use math.unit instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+10 |     @if $prev-num == null or unit($num) == "%" or unit($prev-num) == "%" {
+
+
+node_modules\bootstrap\scss\_functions.scss 11:51  -assert-ascending()
+node_modules\bootstrap\scss\_variables.scss 494:1  @import
+node_modules\bootstrap\scss\bootstrap.scss 8:9     @import
+assets\styles\app.scss 5:9                         root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 13, column 8 of file:///C:/wamp64/www/3INNOV/assets/styles/app.scss:13:8:   
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+13 | @import 'sidebar';
+
+
+assets\styles\app.scss 14:9  root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 14, column 8 of file:///C:/wamp64/www/3INNOV/assets/styles/app.scss:14:8:   
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+14 | @import 'dashboard';
+
+
+assets\styles\app.scss 15:9  root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 15, column 8 of file:///C:/wamp64/www/3INNOV/assets/styles/app.scss:15:8:   
+Sass @import rules are deprecated and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+15 | @import 'components';
+
+
+assets\styles\app.scss 16:9  root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 36, column 10 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_functions.scss:36:10:
+red() is deprecated. Suggestion:
+
+color.channel($color, "red", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+36 |   @return red($value), green($value), blue($value);
+
+
+node_modules\bootstrap\scss\_functions.scss 37:11  to-rgb()
+node_modules\bootstrap\scss\_functions.scss 61:36  map-loop()
+node_modules\bootstrap\scss\_maps.scss 6:20        @import
+node_modules\bootstrap\scss\bootstrap.scss 10:9    @import
+assets\styles\app.scss 5:9                         root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 36, column 23 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_functions.scss:36:23:
+green() is deprecated. Suggestion:
+
+color.channel($color, "green", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+36 |   @return red($value), green($value), blue($value);
+
+
+node_modules\bootstrap\scss\_functions.scss 37:24  to-rgb()
+node_modules\bootstrap\scss\_functions.scss 61:36  map-loop()
+node_modules\bootstrap\scss\_maps.scss 6:20        @import
+node_modules\bootstrap\scss\bootstrap.scss 10:9    @import
+assets\styles\app.scss 5:9                         root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 36, column 38 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_functions.scss:36:38:
+blue() is deprecated. Suggestion:
+
+color.channel($color, "blue", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+36 |   @return red($value), green($value), blue($value);
+
+
+node_modules\bootstrap\scss\_functions.scss 37:39  to-rgb()
+node_modules\bootstrap\scss\_functions.scss 61:36  map-loop()
+node_modules\bootstrap\scss\_maps.scss 6:20        @import
+node_modules\bootstrap\scss\bootstrap.scss 10:9    @import
+assets\styles\app.scss 5:9                         root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 37, column 4 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_type.scss:37:4:
+Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+37 |     font-family: $display-font-family;
+
+
+node_modules\bootstrap\scss\_type.scss 38:5      @import
+node_modules\bootstrap\scss\bootstrap.scss 17:9  @import
+assets\styles\app.scss 5:9                       root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 38, column 4 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_type.scss:38:4:
+Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+38 |     font-style: $display-font-style;
+
+
+node_modules\bootstrap\scss\_type.scss 39:5      @import
+node_modules\bootstrap\scss\bootstrap.scss 17:9  @import
+assets\styles\app.scss 5:9                       root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 39, column 4 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_type.scss:39:4:
+Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+39 |     font-weight: $display-font-weight;
+
+
+node_modules\bootstrap\scss\_type.scss 40:5      @import
+node_modules\bootstrap\scss\bootstrap.scss 17:9  @import
+assets\styles\app.scss 5:9                       root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 56, column 13 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/vendor/_rfs.scss:56:13:
+Passing percentage units to the global abs() function is deprecated.
+In the future, this will emit a CSS abs() function to be resolved by the browser.
+To preserve current behavior: math.abs(100%)
+To emit a CSS abs() now: abs(#{100%})
+More info: https://sass-lang.com/d/abs-percent
+
+56 |   $dividend: abs($dividend);
+
+
+node_modules\bootstrap\scss\vendor\_rfs.scss 57:14         divide()
+node_modules\bootstrap\scss\mixins\_grid.scss 59:12        row-cols()
+node_modules\bootstrap\scss\mixins\_grid.scss 85:13        @content
+node_modules\bootstrap\scss\mixins\_breakpoints.scss 68:5  media-breakpoint-up()
+node_modules\bootstrap\scss\mixins\_grid.scss 72:5         make-grid-columns()
+node_modules\bootstrap\scss\_grid.scss 38:3                @import
+node_modules\bootstrap\scss\bootstrap.scss 20:9            @import
+assets\styles\app.scss 5:9                                 root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 184, column 9 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_functions.scss:184:9:
+red() is deprecated. Suggestion:
+
+color.channel($color, "red", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+184 |     "r": red($color),
+
+
+node_modules\bootstrap\scss\_functions.scss 185:10            luminance()
+node_modules\bootstrap\scss\_functions.scss 174:8             contrast-ratio()
+node_modules\bootstrap\scss\_functions.scss 159:22            color-contrast()
+node_modules\bootstrap\scss\mixins\_table-variants.scss 4:13  table-variant()
+node_modules\bootstrap\scss\_tables.scss 154:3                @import
+node_modules\bootstrap\scss\bootstrap.scss 21:9               @import
+assets\styles\app.scss 5:9                                    root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 185, column 9 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_functions.scss:185:9:
+green() is deprecated. Suggestion:
+
+color.channel($color, "green", $space: rgb)
+
+More info: https://sass-lang.com/d/color-functions
+
+185 |     "g": green($color),
+
+
+node_modules\bootstrap\scss\_functions.scss 186:10            luminance()
+node_modules\bootstrap\scss\_functions.scss 174:8             contrast-ratio()
+node_modules\bootstrap\scss\_functions.scss 159:22            color-contrast()
+node_modules\bootstrap\scss\mixins\_table-variants.scss 4:13  table-variant()
+node_modules\bootstrap\scss\_tables.scss 154:3                @import
+node_modules\bootstrap\scss\bootstrap.scss 21:9               @import
+assets\styles\app.scss 5:9                                    root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 206, column 10 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_functions.scss:206:10:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.mix instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+206 |   @return mix(white, $color, $weight);
+
+
+node_modules\bootstrap\scss\_functions.scss 207:11  tint-color()
+node_modules\bootstrap\scss\_variables.scss 79:12   @import
+node_modules\bootstrap\scss\bootstrap.scss 8:9      @import
+assets\styles\app.scss 5:9                          root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 211, column 10 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_functions.scss:211:10:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.mix instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+211 |   @return mix(black, $color, $weight);
+
+
+node_modules\bootstrap\scss\_functions.scss 212:11  shade-color()
+node_modules\bootstrap\scss\_variables.scss 84:12   @import
+node_modules\bootstrap\scss\bootstrap.scss 8:9      @import
+assets\styles\app.scss 5:9                          root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 341, column 26 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_variables.scss:341:26:
+Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+Use color.mix instead.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+341 | $light-bg-subtle:         mix($gray-100, $white) !default;
+
+
+node_modules\bootstrap\scss\_variables.scss 342:27  @import
+node_modules\bootstrap\scss\bootstrap.scss 8:9      @import
+assets\styles\app.scss 5:9                          root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 501, column 2 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_reboot.scss:501:2:
+Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+501 |   font-weight: $legend-font-weight;
+
+
+node_modules\bootstrap\scss\_reboot.scss 502:3   @import
+node_modules\bootstrap\scss\bootstrap.scss 16:9  @import
+assets\styles\app.scss 5:9                       root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 502, column 2 of file:///C:/wamp64/www/3INNOV/node_modules/bootstrap/scss/_reboot.scss:502:2:
+Sass's behavior for declarations that appear after nested
+rules will be changing to match the behavior specified by CSS in an upcoming
+version. To keep the existing behavior, move the declaration above the nested
+rule. To opt into the new behavior, wrap the declaration in `& {}`.
+
+More info: https://sass-lang.com/d/mixed-decls
+
+502 |   line-height: inherit;
+
+
+node_modules\bootstrap\scss\_reboot.scss 503:3   @import
+node_modules\bootstrap\scss\bootstrap.scss 16:9  @import
+assets\styles\app.scss 5:9                       root stylesheet
+
+
+ warn  in ./assets/styles/app.scss                                                              21:04:05
+Module Warning (from ./node_modules/sass-loader/dist/cjs.js):
+265 repetitive deprecation warnings omitted.
+Run in verbose mode to see all warnings.
+
+Entrypoint app [big] 1.16 MiB = runtime.js 15.5 KiB vendors-node_modules_core-js_internals_check-correctness-of-iteration_js-node_modules_core-js-fd7190.js 484 KiB vendors-node_modules_bootstrap_dist_js_bootstrap_esm_js-node_modules_core-js_modules_es_array-bdb224.js 661 KiB app.js 24.4 KiB
+Entrypoint dashboard [big] 2.02 MiB = runtime.js 15.5 KiB vendors-node_modules_core-js_internals_check-correctness-of-iteration_js-node_modules_core-js-fd7190.js 484 KiB vendors-node_modules_core-js_modules_es_array_push_js-node_modules_core-js_modules_es_array_r-031ab9.js 1.46 MiB dashboard.js 69.5 KiB
+Entrypoint react-app [big] 2.54 MiB = runtime.js 15.5 KiB vendors-node_modules_react-dom_client_js.js 2.52 MiB react-app.js 3.08 KiB
+Entrypoint global [big] 1.37 MiB (999 KiB) = runtime.js 15.5 KiB vendors-node_modules_fortawesome_fontawesome-free_css_all_css-node_modules_animate_css_animate_css.css 606 KiB global.css 784 KiB 8 auxiliary assets
+webpack compiled with 22 warnings

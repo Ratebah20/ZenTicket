@@ -195,6 +195,55 @@ class TechnicienController extends AbstractController
         return $this->redirectToRoute('technicien_dashboard');
     }
 
+    #[Route('/ticket/{ticketId}/create-chat', name: 'technicien_create_chat')]
+    public function createChat(
+        int $ticketId, 
+        TicketRepository $ticketRepository, 
+        EntityManagerInterface $entityManager,
+        NotificationService $notificationService
+    ): Response {
+        /** @var Technicien $technicien */
+        $technicien = $this->getUser();
+        
+        $ticket = $ticketRepository->find($ticketId);
+        
+        if (!$ticket) {
+            $this->addFlash('error', 'Ticket non trouvé.');
+            return $this->redirectToRoute('technicien_dashboard');
+        }
+        
+        // Vérifier si le technicien est assigné au ticket
+        if ($ticket->getTechnicien() !== $technicien) {
+            $this->addFlash('error', 'Vous n\'êtes pas assigné à ce ticket.');
+            return $this->redirectToRoute('technicien_dashboard');
+        }
+        
+        // Vérifier si un chat existe déjà
+        if ($ticket->getChatbox()) {
+            return $this->redirectToRoute('chat_view', ['id' => $ticket->getChatbox()->getId()]);
+        }
+        
+        // Créer une nouvelle chatbox
+        $chatbox = new \App\Entity\Chatbox();
+        $chatbox->setTicket($ticket);
+        $chatbox->setUser($technicien);
+        $chatbox->setCreatedAt(new \DateTime());
+        $chatbox->setIsTemporary(false);
+        
+        // Associer la chatbox au ticket
+        $ticket->setChatbox($chatbox);
+        
+        $entityManager->persist($chatbox);
+        $entityManager->flush();
+        
+        // Notifier l'utilisateur qu'un chat a été créé
+        $notificationService->notifyChatCreated($ticket);
+        
+        $this->addFlash('success', 'Chat créé avec succès.');
+        
+        return $this->redirectToRoute('chat_view', ['id' => $chatbox->getId()]);
+    }
+
     #[Route('/profile', name: 'technicien_profile')]
     public function profile(): Response
     {

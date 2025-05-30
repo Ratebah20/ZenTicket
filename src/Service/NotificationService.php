@@ -152,6 +152,51 @@ class NotificationService
         }
     }
 
+    public function notifyChatCreated(Ticket $ticket): void
+    {
+        try {
+            $utilisateur = $ticket->getUtilisateur();
+            $technicien = $ticket->getTechnicien();
+            
+            if (!$utilisateur) {
+                $this->logger->warning('Pas d\'utilisateur associé au ticket pour la notification de chat', [
+                    'ticket_id' => $ticket->getId()
+                ]);
+                return;
+            }
+            
+            // Créer la notification in-app
+            $notification = new Notification();
+            $notification->setTitre('Nouveau chat disponible');
+            $notification->setMessage("Un technicien a créé un canal de discussion pour votre ticket \"{$ticket->getTitre()}\". Vous pouvez maintenant communiquer directement avec lui.");
+            $notification->setType(Notification::TYPE_NOUVEAU_TICKET);
+            $notification->setUtilisateur($utilisateur);
+            $notification->setTicket($ticket);
+
+            $this->entityManager->persist($notification);
+            $this->entityManager->flush();
+
+            // Envoyer l'email
+            $this->sendEmail(
+                $utilisateur->getEmail(),
+                'Nouveau chat disponible pour votre ticket',
+                'emails/nouveau_chat.html.twig',
+                [
+                    'ticket' => $ticket,
+                    'utilisateur' => $utilisateur,
+                    'technicien' => $technicien,
+                    'chat_url' => $this->urlGenerator->generate('chat_view', ['id' => $ticket->getChatbox()->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
+                ]
+            );
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur dans notifyChatCreated: ' . $e->getMessage(), [
+                'exception' => $e,
+                'ticket_id' => $ticket->getId(),
+                'user_id' => $utilisateur ? $utilisateur->getId() : null
+            ]);
+        }
+    }
+
     private function sendEmail(string $to, string $subject, string $template, array $context): void
     {
         try {
