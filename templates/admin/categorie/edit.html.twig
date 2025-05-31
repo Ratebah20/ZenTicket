@@ -3,16 +3,19 @@
 {% block title %}Modifier la Catégorie{% endblock %}
 
 {% block body %}
-    <div class="container mt-4">
-        <h1>Modifier la catégorie</h1>
+    <div class="container mt-4 bg-dark">
+        <h1 class="text-white">Modifier la catégorie</h1>
 
-        {{ form_start(form) }}
-            {{ form_widget(form) }}
-            <button type="submit" class="btn btn-warning">Mettre à jour</button>
-        {{ form_end(form) }}
+        <div class="card bg-dark text-white border-secondary p-3 mb-3">
+            {{ form_start(form) }}
+                {{ form_row(form.nom, {'attr': {'class': 'bg-dark text-white border-secondary'}, 'label_attr': {'class': 'text-white'}}) }}
+                {{ form_row(form.description, {'attr': {'class': 'bg-dark text-white border-secondary'}, 'label_attr': {'class': 'text-white'}}) }}
+                <button type="submit" class="btn btn-warning mt-3">Mettre à jour</button>
+            {{ form_end(form) }}
+        </div>
 
         <div class="mt-3">
-            <a href="{{ path('admin_categorie_index') }}" class="btn btn-secondary">Retour à la liste</a>
+            <a href="{{ path('admin_categorie_index') }}" class="btn btn-outline-light">Retour à la liste</a>
         </div>
     </div>
 {% endblock %}

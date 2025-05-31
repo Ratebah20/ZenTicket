@@ -1,0 +1,130 @@
+// Styles pour la mise en page principale de ZenTicket
+
+// Layout principal
+.app-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+// Container principal à côté de la sidebar
+.main-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: $sidebar-width;
+    transition: margin-left 0.3s ease;
+    
+    @media (max-width: 991px) {
+        margin-left: 0;
+    }
+}
+
+// Zone de contenu principal
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+// Zone de contenu de la page
+.page-content {
+    padding: 30px;
+    flex: 1;
+}
+
+// Footer
+.footer {
+    padding: 15px 30px;
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    
+    a {
+        color: var(--text-secondary);
+        margin-left: 15px;
+        text-decoration: none;
+        
+        &:hover {
+            color: var(--primary);
+        }
+    }
+}
+
+// Barre de navigation
+.navbar {
+    display: flex;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    
+    .navbar-nav {
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+    }
+    
+    .nav-link {
+        color: var(--text-secondary);
+        padding: 8px 15px;
+        border-radius: 8px;
+        transition: all 0.3s;
+        
+        &:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-hover);
+        }
+        
+        i {
+            font-size: 18px;
+        }
+    }
+    
+    .dropdown-menu {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        padding: 8px;
+        
+        .dropdown-item {
+            color: var(--text-secondary);
+            border-radius: 6px;
+            padding: 8px 15px;
+            margin-bottom: 2px;
+            
+            &:hover {
+                background-color: var(--bg-hover);
+                color: var(--text-primary);
+            }
+            
+            &:last-child {
+                margin-bottom: 0;
+            }
+            
+            i {
+                margin-right: 10px;
+                font-size: 16px;
+                width: 18px;
+                text-align: center;
+            }
+        }
+    }
+}
+
+// Compteur de notifications
+.notification-counter {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--danger);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

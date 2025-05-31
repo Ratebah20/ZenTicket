@@ -5,14 +5,14 @@
 {% block body %}
     <div class="container mt-4">
         <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ path('app_profile_tickets') }}">Tickets</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ ticket.titre }}</li>
+            <ol class="breadcrumb bg-dark text-white">
+                <li class="breadcrumb-item"><a href="{{ path('app_profile_tickets') }}" class="text-info">Tickets</a></li>
+                <li class="breadcrumb-item active text-white" aria-current="page">{{ ticket.titre }}</li>
             </ol>
         </nav>
 
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card bg-dark text-white border-secondary">
+            <div class="card-header d-flex justify-content-between align-items-center border-secondary">
                 <h1 class="h3 mb-0">{{ ticket.titre }}</h1>
                 <span class="badge {{ ticket.prioriteClass }} bg-opacity-75">
                     Priorité {{ ticket.priorite|capitalize }}
@@ -38,7 +38,7 @@
                             {% if ticket.technicien %}
                                 {{ ticket.technicien.nom }}
                             {% else %}
-                                <span class="text-muted">Non assigné</span>
+                                <span class="text-secondary">Non assigné</span>
                             {% endif %}
                         </p>
                     </div>
@@ -46,7 +46,7 @@
 
                 <div class="mt-4">
                     <h5>Description</h5>
-                    <div class="card bg-light">
+                    <div class="card bg-secondary bg-opacity-25 border-secondary">
                         <div class="card-body">
                             {{ ticket.description|nl2br }}
                         </div>
@@ -69,7 +69,7 @@
                     {% if is_granted('ROLE_TECHNICIEN') and ticket.statut != 'clôturé' %}
                         <form action="{{ path('app_ticket_change_status', {'id': ticket.id}) }}" method="post" style="display:inline;">
                             <input type="hidden" name="_token" value="{{ csrf_token('change-status' ~ ticket.id) }}">
-                            <select name="status" class="form-select d-inline-block w-auto">
+                            <select name="status" class="form-select d-inline-block w-auto bg-dark text-white border-secondary">
                                 <option value="nouveau" {% if ticket.statut == 'nouveau' %}selected{% endif %}>Nouveau</option>
                                 <option value="en cours" {% if ticket.statut == 'en cours' %}selected{% endif %}>En cours</option>
                                 <option value="résolu" {% if ticket.statut == 'résolu' %}selected{% endif %}>Résolu</option>
@@ -89,7 +89,7 @@
                         {% endif %}
                     {% endif %}
 
-                    <a href="{{ path('app_profile_tickets') }}" class="btn btn-secondary">
+                    <a href="{{ path('app_profile_tickets') }}" class="btn btn-outline-light">
                         <i class="fas fa-arrow-left"></i> Retour
                     </a>
                 </div>
@@ -98,18 +98,18 @@
     </div>
 
     {# Section Commentaires #}
-    <div class="card mt-4">
-        <div class="card-header">
+    <div class="card mt-4 bg-dark text-white border-secondary">
+        <div class="card-header border-secondary">
             <h5 class="card-title mb-0">Commentaires</h5>
         </div>
         <div class="card-body">
             {# Liste des commentaires #}
             {% for commentaire in ticket.commentaires %}
-                <div class="comment-item mb-3 p-3 border-bottom">
+                <div class="comment-item mb-3 p-3 border-bottom border-secondary">
                     <div class="d-flex justify-content-between">
                         <div>
                             <strong>{{ commentaire.auteur.nom }}</strong>
-                            <small class="text-muted">{{ commentaire.dateCreation|date('d/m/Y H:i') }}</small>
+                            <small class="text-secondary">{{ commentaire.dateCreation|date('d/m/Y H:i') }}</small>
                         </div>
                         {% if app.user == commentaire.auteur %}
                             <div>
@@ -131,15 +131,15 @@
                     {% endif %}
                 </div>
             {% else %}
-                <p class="text-muted">Aucun commentaire pour le moment.</p>
+                <p class="text-secondary">Aucun commentaire pour le moment.</p>
             {% endfor %}
 
             {# Formulaire d'ajout de commentaire #}
             <div class="mt-4">
                 <h6>Ajouter un commentaire</h6>
                 {{ form_start(commentForm) }}
-                    {{ form_row(commentForm.contenu) }}
-                    {{ form_row(commentForm.pieceJointe) }}
+                    {{ form_row(commentForm.contenu, {'attr': {'class': 'bg-dark text-white border-secondary'}}) }}
+                    {{ form_row(commentForm.pieceJointe, {'attr': {'class': 'bg-dark text-white border-secondary form-control'}}) }}
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-comment"></i> Commenter
                     </button>

@@ -72,6 +72,12 @@
                 <i class="fas fa-user-plus"></i>
                 <span>Nouveau technicien</span>
             </a>
+
+            <a href="{{ path('admin_categorie_index') }}" 
+               class="menu-item {{ currentRoute starts with 'admin_categorie_' ? 'active' : '' }}">
+                <i class="fas fa-tags"></i>
+                <span>Gestion des catégories</span>
+            </a>
             
             <a href="{{ path('app_rapport_index') }}" 
                class="menu-item {{ currentRoute starts with 'app_rapport_' ? 'active' : '' }}">

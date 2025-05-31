@@ -3,8 +3,8 @@
 {% block title %}Créer un administrateur{% endblock %}
 
 {% block body %}
-<div class="container mt-4">
-    <h1>Créer un nouvel administrateur</h1>
+<div class="container mt-4 bg-dark">
+    <h1 class="text-white">Créer un nouvel administrateur</h1>
 
     {% for message in app.flashes('success') %}
         <div class="alert alert-success">
@@ -12,12 +12,13 @@
         </div>
     {% endfor %}
 
-    {{ form_start(form) }}
-        {{ form_row(form.email) }}
-        {{ form_row(form.nom) }}
-        {{ form_row(form.password) }}
-        
-        <button type="submit" class="btn btn-primary">Créer l'administrateur</button>
+    <div class="card bg-dark text-white border-secondary p-3">
+        {{ form_start(form) }}
+            {{ form_row(form.email, {'attr': {'class': 'bg-dark text-white border-secondary'}, 'label_attr': {'class': 'text-white'}}) }}
+            {{ form_row(form.nom, {'attr': {'class': 'bg-dark text-white border-secondary'}, 'label_attr': {'class': 'text-white'}}) }}
+            {{ form_row(form.password, {'attr': {'class': 'bg-dark text-white border-secondary'}, 'label_attr': {'class': 'text-white'}}) }}
+            
+            <button type="submit" class="btn btn-primary mt-3">Créer l'administrateur</button>
     {{ form_end(form) }}
 </div>
 {% endblock %}

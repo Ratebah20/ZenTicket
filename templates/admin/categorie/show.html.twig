@@ -3,22 +3,22 @@
 {% block title %}Détails de la Catégorie{% endblock %}
 
 {% block body %}
-    <div class="container mt-4">
-        <h1>Détails de la catégorie</h1>
+    <div class="container mt-4 bg-dark">
+        <h1 class="text-white">Détails de la catégorie</h1>
 
-        <div class="card mt-4">
+        <div class="card mt-4 bg-dark text-white border-secondary">
             <div class="card-body">
-                <h5 class="card-title">{{ categorie.nom }}</h5>
+                <h5 class="card-title text-white">{{ categorie.nom }}</h5>
                 <p class="card-text">
-                    <strong>Description:</strong> {{ categorie.description }}<br>
-                    <strong>Créée par:</strong> {{ categorie.administrateur ? categorie.administrateur.email : 'Non assigné' }}
+                    <strong class="text-white">Description:</strong> <span class="text-white">{{ categorie.description }}</span><br>
+                    <strong class="text-white">Créée par:</strong> <span class="text-white">{{ categorie.administrateur ? categorie.administrateur.email : 'Non assigné' }}</span>
                 </p>
             </div>
         </div>
 
         <div class="mt-4">
             <a href="{{ path('admin_categorie_edit', {'id': categorie.id}) }}" class="btn btn-warning">Modifier</a>
-            <a href="{{ path('admin_categorie_index') }}" class="btn btn-secondary">Retour à la liste</a>
+            <a href="{{ path('admin_categorie_index') }}" class="btn btn-outline-light">Retour à la liste</a>
         </div>
     </div>
 {% endblock %}

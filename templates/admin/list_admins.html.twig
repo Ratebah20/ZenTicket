@@ -3,16 +3,18 @@
 {% block title %}Liste des administrateurs{% endblock %}
 
 {% block body %}
-<div class="container mt-4">
-    <h1>Liste des administrateurs</h1>
+<div class="container mt-4 bg-dark">
+    <h1 class="text-white">Liste des administrateurs</h1>
 
-    <table class="table">
+    <div class="card bg-dark text-white border-secondary mb-4">
+        <div class="card-body">
+            <table class="table table-dark table-hover border-secondary">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Nom</th>
-                <th>Email</th>
-                <th>Actions</th>
+                <th class="text-white">ID</th>
+                <th class="text-white">Nom</th>
+                <th class="text-white">Email</th>
+                <th class="text-white">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -27,7 +29,9 @@
             </tr>
             {% endfor %}
         </tbody>
-    </table>
+            </table>
+        </div>
+    </div>
 
     <a href="{{ path('admin_create_admin') }}" class="btn btn-primary">
         <i class="fas fa-plus"></i> Ajouter un administrateur

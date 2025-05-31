@@ -6,19 +6,34 @@
 <div class="container mt-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ path('app_rapport_index') }}">Rapports</a></li>
-            <li class="breadcrumb-item active" aria-current="page">
+            <li class="breadcrumb-item"><a href="{{ path('app_rapport_index') }}" class="text-info">Rapports</a></li>
+            <li class="breadcrumb-item active text-white" aria-current="page">
                 {{ rapport is defined ? 'Modifier' : 'Nouveau' }} rapport d'intervention
             </li>
         </ol>
     </nav>
 
-    <div class="card">
-        <div class="card-header">
-            <h1 class="h3 mb-0">{{ rapport is defined ? 'Modifier' : 'Nouveau' }} rapport d'intervention</h1>
+    <div class="card bg-card border-primary">
+        <div class="card-header bg-primary">
+            <h1 class="h3 mb-0 text-white">{{ rapport is defined ? 'Modifier' : 'Nouveau' }} rapport d'intervention</h1>
         </div>
-        <div class="card-body">
-            {{ form_start(form) }}
+        <div class="card-body text-white">
+            {# Ajouter des classes pour le thème sombre directement sur les attributs des champs #}
+            {{ form_start(form, {'attr': {'class': 'dark-form'}}) }}
+                <style>
+                    .dark-form input, .dark-form select, .dark-form textarea {
+                        background-color: #212529 !important; 
+                        color: white !important;
+                        border-color: #495057 !important;
+                    }
+                    .dark-form textarea {
+                        min-height: 120px;
+                    }
+                    .dark-form label {
+                        color: white !important;
+                    }
+                </style>
+                
                 <div class="row">
                     <div class="col-md-6">
                         {{ form_row(form.titre) }}
@@ -43,7 +58,7 @@
                 </div>
 
                 <div class="text-end mt-3">
-                    <a href="{{ path('app_rapport_index') }}" class="btn btn-secondary">Annuler</a>
+                    <a href="{{ path('app_rapport_index') }}" class="btn btn-outline-light">Annuler</a>
                     <button type="submit" class="btn btn-primary">
                         {{ rapport is defined ? 'Enregistrer les modifications' : 'Créer le rapport' }}
                     </button>

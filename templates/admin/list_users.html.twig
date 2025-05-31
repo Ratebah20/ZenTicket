@@ -3,13 +3,16 @@
 {% block title %}Liste des Utilisateurs{% endblock %}
 
 {% block body %}
-    <h1>Liste des Utilisateurs</h1>
-    <table>
+<div class="container mt-4 bg-dark">
+    <h1 class="text-white">Liste des Utilisateurs</h1>
+    <div class="card bg-dark text-white border-secondary mb-4">
+        <div class="card-body">
+            <table class="table table-dark table-hover border-secondary">
         <thead>
             <tr>
-                <th>Nom</th>
-                <th>Email</th>
-                <th>Rôle</th>
+                <th class="text-white">Nom</th>
+                <th class="text-white">Email</th>
+                <th class="text-white">Rôle</th>
             </tr>
         </thead>
         <tbody>
@@ -21,5 +24,8 @@
                 </tr>
             {% endfor %}
         </tbody>
-    </table>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -4,20 +4,20 @@
 
 {% block body %}
 <div class="container mt-4">
-    <h1>Mes Tickets</h1>
+    <h1 class="text-white mb-4">Mes Tickets</h1>
 
     {# Section tickets en cours #}
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>Tickets en cours</h3>
+    <div class="card bg-card text-white border-primary mb-4">
+        <div class="card-header bg-primary">
+            <h3 class="card-title mb-0">Tickets en cours</h3>
         </div>
         <div class="card-body">
             {% set activeTickets = tickets|filter(ticket => ticket.statut != 'clôturé') %}
             {% if activeTickets is empty %}
-                <p>Aucun ticket en cours.</p>
+                <p class="text-white">Aucun ticket en cours.</p>
             {% else %}
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table table-dark table-hover">
                         <thead>
                             <tr>
                                 <th>Titre</th>
@@ -34,7 +34,7 @@
                             {% for ticket in activeTickets %}
                                 <tr>
                                     <td>
-                                        <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="text-decoration-none">
+                                        <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="text-decoration-none text-info">
                                             {{ ticket.titre }}
                                         </a>
                                     </td>
@@ -58,27 +58,27 @@
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="btn btn-sm btn-primary me-2">
+                                            <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="btn btn-sm btn-primary text-white me-2">
                                                 <i class="fas fa-eye"></i> Voir
                                             </a>
                                             {% if ticket.chatbox %}
-                                                <a href="{{ path('chat_view', {'id': ticket.chatbox.id}) }}" class="btn btn-sm btn-info me-2">
+                                                <a href="{{ path('chat_view', {'id': ticket.chatbox.id}) }}" class="btn btn-sm btn-info text-white me-2">
                                                     <i class="fas fa-comments"></i> Chat
                                                 </a>
                                             {% endif %}
                                             
                                             {% if ticket.solution %}
-                                                <button type="button" class="btn btn-sm btn-info me-2" data-bs-toggle="modal" data-bs-target="#solutionActiveModal{{ ticket.id }}">
+                                                <button type="button" class="btn btn-sm btn-info text-white me-2" data-bs-toggle="modal" data-bs-target="#solutionActiveModal{{ ticket.id }}">
                                                     <i class="fas fa-eye"></i> Solution
                                                 </button>
                                                 
                                                 <!-- Modal pour afficher la solution (tickets actifs) -->
                                                 <div class="modal fade" id="solutionActiveModal{{ ticket.id }}" tabindex="-1">
                                                     <div class="modal-dialog">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header">
+                                                        <div class="modal-content bg-card text-white border border-info">
+                                                            <div class="modal-header bg-info text-white">
                                                                 <h5 class="modal-title">Solution proposée</h5>
-                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
                                                             </div>
                                                             <div class="modal-body">
                                                                 <p><strong>Problème :</strong> {{ ticket.description }}</p>
@@ -92,19 +92,19 @@
                                                                 {% if ticket.statut == 'résolu' and not ticket.solutionValidee %}
                                                                     <form action="{{ path('app_ticket_validate_solution', {'id': ticket.id}) }}" method="POST" style="display: inline;">
                                                                         <input type="hidden" name="_token" value="{{ csrf_token('validate' ~ ticket.id) }}">
-                                                                        <button type="submit" class="btn btn-success">
+                                                                        <button type="submit" class="btn btn-success text-white">
                                                                             <i class="fas fa-check-circle"></i> Valider et clôturer le ticket
                                                                         </button>
                                                                     </form>
                                                                 {% else %}
-                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                                                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Fermer</button>
                                                                 {% endif %}
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             {% else %}
-                                                <button type="button" class="btn btn-sm btn-secondary me-2" disabled>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary text-white me-2" disabled>
                                                     <i class="fas fa-eye"></i> Pas de solution
                                                 </button>
                                             {% endif %}
@@ -112,7 +112,7 @@
                                             {% if ticket.statut == 'résolu' %}
                                                 <form action="{{ path('app_ticket_validate_solution', {'id': ticket.id}) }}" method="POST" style="display: inline;">
                                                     <input type="hidden" name="_token" value="{{ csrf_token('validate' ~ ticket.id) }}">
-                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                    <button type="submit" class="btn btn-sm btn-success text-white">
                                                         <i class="fas fa-check-circle"></i> Clôturer
                                                     </button>
                                                 </form>
@@ -129,17 +129,17 @@
     </div>
 
     {# Section tickets clôturés #}
-    <div class="card">
-        <div class="card-header">
-            <h3>Tickets clôturés</h3>
+    <div class="card bg-card text-white border-secondary">
+        <div class="card-header bg-secondary">
+            <h3 class="card-title mb-0">Tickets clôturés</h3>
         </div>
         <div class="card-body">
             {% set resolvedTickets = tickets|filter(ticket => ticket.statut == 'clôturé') %}
             {% if resolvedTickets is empty %}
-                <p>Aucun ticket clôturé.</p>
+                <p class="text-white">Aucun ticket clôturé.</p>
             {% else %}
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table table-dark table-hover">
                         <thead>
                             <tr>
                                 <th>Titre</th>
@@ -159,23 +159,23 @@
                                     <td>{{ ticket.dateResolution|date('d/m/Y H:i') }}</td>
                                     <td>{{ ticket.technicien.nom }}</td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#solutionModal{{ ticket.id }}">
+                                        <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#solutionModal{{ ticket.id }}">
                                             <i class="fas fa-info-circle"></i> Voir la solution
                                         </button>
 
                                         <!-- Modal pour afficher la solution -->
                                         <div class="modal fade" id="solutionModal{{ ticket.id }}" tabindex="-1">
                                             <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Solution apportée</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p><strong>Problème :</strong> {{ ticket.description }}</p>
-                                                        <p><strong>Solution :</strong> {{ ticket.solution }}</p>
-                                                        <p><strong>Résolu par :</strong> {{ ticket.technicien.nom }}</p>
-                                                        <p><strong>Date de résolution :</strong> {{ ticket.dateResolution|date('d/m/Y H:i') }}</p>
+                                            <div class="modal-content bg-card text-white border border-info">
+                                                <div class="modal-header bg-info text-white">
+                                                    <h5 class="modal-title">Solution apportée</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p><strong>Problème :</strong> {{ ticket.description }}</p>
+                                                    <p><strong>Solution :</strong> {{ ticket.solution }}</p>
+                                                    <p><strong>Résolu par :</strong> {{ ticket.technicien.nom }}</p>
+                                                    <p><strong>Date de résolution :</strong> {{ ticket.dateResolution|date('d/m/Y H:i') }}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -189,7 +189,7 @@
                                     <td>
                                         <form action="{{ path('app_ticket_validate_solution', {'id': ticket.id}) }}" method="POST" style="display: inline;">
                                             <input type="hidden" name="_token" value="{{ csrf_token('validate' ~ ticket.id) }}">
-                                            <button type="submit" class="btn btn-sm btn-success">
+                                            <button type="submit" class="btn btn-sm btn-success text-white">
                                                 <i class="fas fa-check-circle"></i> Clôturer le ticket
                                             </button>
                                         </form>

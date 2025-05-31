@@ -4,7 +4,7 @@
 
 {% block body %}
     <div class="container mt-4">
-        <h1>Création d'un nouveau technicien</h1>
+        <h1 class="text-white">Création d'un nouveau technicien</h1>
 
         {% for message in app.flashes('success') %}
             <div class="alert alert-success">
@@ -13,18 +13,22 @@
         {% endfor %}
 
         {{ form_start(form, {'attr': {'class': 'mt-4'}}) }}
-            <div class="mb-3">
-                {{ form_row(form.nom) }}
+            <div class="card bg-dark text-white border-secondary mb-4">
+                <div class="card-body">
+                    <div class="mb-3">
+                        {{ form_row(form.nom, {'attr': {'class': 'form-control bg-dark text-white border-secondary'}}) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form_row(form.email, {'attr': {'class': 'form-control bg-dark text-white border-secondary'}}) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form_row(form.password, {'attr': {'class': 'form-control bg-dark text-white border-secondary'}}) }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Créer le technicien</button>
+                </div>
             </div>
-            <div class="mb-3">
-                {{ form_row(form.email) }}
-            </div>
-            <div class="mb-3">
-                {{ form_row(form.password) }}
-            </div>
-            <button type="submit" class="btn btn-primary">Créer le technicien</button>
         {{ form_end(form) }}
         
-        <a href="{{ path('app_home') }}" class="btn btn-secondary mt-3">Retour au tableau de bord</a>
+        <a href="{{ path('app_home') }}" class="btn btn-outline-light mt-3">Retour au tableau de bord</a>
     </div>
 {% endblock %}

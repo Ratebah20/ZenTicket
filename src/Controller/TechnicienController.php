@@ -33,10 +33,30 @@ class TechnicienController extends AbstractController
             ->setParameter('statut', 'nouveau')
             ->getQuery()
             ->getResult();
+            
+        // Calculer le nombre total de tickets
+        $totalTicketsCount = $ticketRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+            
+        // Compter les tickets résolus
+        $resolvedTicketsCount = $ticketRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->andWhere('t.statut = :statut')
+            ->setParameter('statut', 'résolu')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // Calculer le nombre de nouveaux tickets
+        $newTicketsCount = count($newTickets);
 
         return $this->render('technicien/dashboard.html.twig', [
             'assignedTickets' => $assignedTickets,
             'newTickets' => $newTickets,
+            'totalTicketsCount' => $totalTicketsCount,
+            'resolvedTicketsCount' => $resolvedTicketsCount,
+            'newTicketsCount' => $newTicketsCount,
         ]);
     }
 
@@ -46,9 +66,43 @@ class TechnicienController extends AbstractController
         /** @var Technicien $technicien */
         $technicien = $this->getUser();
         $tickets = $ticketRepository->findByTechnician($technicien->getId());
+        
+        // Récupérer les tickets assignés
+        $assignedTickets = $ticketRepository->findByTechnician($technicien->getId());
+        
+        // Récupérer les nouveaux tickets
+        $newTickets = $ticketRepository->createQueryBuilder('t')
+            ->leftJoin('t.categorie', 'c')
+            ->andWhere('t.technicien IS NULL')
+            ->andWhere('t.statut = :statut')
+            ->setParameter('statut', 'nouveau')
+            ->getQuery()
+            ->getResult();
+            
+        // Calculer le nombre total de tickets
+        $totalTicketsCount = $ticketRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+            
+        // Compter les tickets résolus
+        $resolvedTicketsCount = $ticketRepository->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->andWhere('t.statut = :statut')
+            ->setParameter('statut', 'résolu')
+            ->getQuery()
+            ->getSingleScalarResult();
 
-        return $this->render('technicien/dashboard.html.twig', [
+        // Calculer le nombre de nouveaux tickets
+        $newTicketsCount = count($newTickets);
+
+        return $this->render('technicien/tickets_list.html.twig', [
             'tickets' => $tickets,
+            'assignedTickets' => $assignedTickets,
+            'newTickets' => $newTickets,
+            'totalTicketsCount' => $totalTicketsCount,
+            'resolvedTicketsCount' => $resolvedTicketsCount,
+            'newTicketsCount' => $newTicketsCount,
         ]);
     }
 

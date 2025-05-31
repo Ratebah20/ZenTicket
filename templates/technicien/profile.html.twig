@@ -4,9 +4,9 @@
 
 {% block body %}
 <div class="container mt-4">
-    <h1>Mon Profil</h1>
+    <h1 class="text-white">Mon Profil</h1>
 
-    <div class="card">
+    <div class="card bg-dark text-white border-secondary">
         <div class="card-body">
             <h5 class="card-title">Informations personnelles</h5>
             <p><strong>Nom :</strong> {{ technicien.nom }}</p>
@@ -16,7 +16,7 @@
     </div>
 
     <div class="mt-3">
-        <a href="{{ path('technicien_dashboard') }}" class="btn btn-primary">Retour au tableau de bord</a>
+        <a href="{{ path('technicien_dashboard') }}" class="btn btn-outline-light">Retour au tableau de bord</a>
     </div>
 </div>
 {% endblock %}

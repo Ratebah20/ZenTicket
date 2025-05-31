@@ -14,35 +14,14 @@
 @import 'sidebar';
 @import 'dashboard';
 @import 'components';
+@import 'chat';
+@import 'layout';
 
 // Base styles
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--bg-dark);
     color: var(--text-primary);
-}
-
-.app-wrapper {
-    display: flex;
-    min-height: 100vh;
-}
-
-.main-content {
-    flex: 1;
-    margin-left: 250px;
-    transition: margin-left 0.3s ease;
-    
-    @include respond-to('lg') {
-        margin-left: $sidebar-width;
-    }
-    
-    @media (max-width: 991px) {
-        margin-left: 0;
-    }
-}
-
-.page-content {
-    padding: 30px;
 }
 
 // Dark theme

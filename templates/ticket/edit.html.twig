@@ -4,21 +4,25 @@
 
 {% block body %}
     <div class="container mt-4">
-        <h1>Modifier le ticket</h1>
+        <h1 class="text-white">Modifier le ticket</h1>
 
         {{ form_start(form) }}
-            <div class="mb-3">
-                {{ form_row(form.titre, {'attr': {'class': 'form-control'}}) }}
+            <div class="card bg-dark text-white border-secondary mb-3">
+                <div class="card-body">
+                    <div class="mb-3">
+                        {{ form_row(form.titre, {'attr': {'class': 'form-control bg-dark text-white border-secondary'}}) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form_row(form.categorie, {'attr': {'class': 'form-select bg-dark text-white border-secondary'}}) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form_row(form.description, {'attr': {'class': 'form-control bg-dark text-white border-secondary'}}) }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                </div>
             </div>
-            <div class="mb-3">
-                {{ form_row(form.categorie, {'attr': {'class': 'form-select'}}) }}
-            </div>
-            <div class="mb-3">
-                {{ form_row(form.description, {'attr': {'class': 'form-control'}}) }}
-            </div>
-            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
         {{ form_end(form) }}
 
-        <a href="{{ path('app_profile_tickets') }}" class="btn btn-secondary mt-3">Retour à la liste des tickets</a>
+        <a href="{{ path('app_profile_tickets') }}" class="btn btn-outline-light mt-3">Retour à la liste des tickets</a>
     </div>
 {% endblock %}

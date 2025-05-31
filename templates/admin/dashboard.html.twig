@@ -3,25 +3,25 @@
 {% block title %}Dashboard Administrateur{% endblock %}
 
 {% block body %}
-<div class="container mt-4">
+<div class="container mt-4 bg-dark">
     {% for label, messages in app.flashes %}
         {% for message in messages %}
             <div class="alert alert-{{ label }} alert-dismissible fade show">
                 {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Fermer"></button>
             </div>
         {% endfor %}
     {% endfor %}
 
     <div class="row mb-4">
         <div class="col">
-            <h1>Dashboard Administrateur</h1>
+            <h1 class="text-white">Dashboard Administrateur</h1>
         </div>
     </div>
 
     {# Section Techniciens #}
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card mb-4 bg-dark text-white border-primary">
+        <div class="card-header d-flex justify-content-between align-items-center border-primary">
             <h2 class="h4 mb-0">Gestion des Techniciens</h2>
             <a href="{{ path('admin_technicien_new') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Nouveau Technicien
@@ -29,16 +29,16 @@
         </div>
         <div class="card-body">
             {% if techniciens is empty %}
-                <p class="text-muted">Aucun technicien enregistré.</p>
+                <p class="text-white">Aucun technicien enregistré.</p>
             {% else %}
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-dark table-hover border-secondary">
                         <thead>
                             <tr>
-                                <th>Nom</th>
-                                <th>Email</th>
-                                <th>Tickets en charge</th>
-                                <th>Actions</th>
+                                <th class="text-white">Nom</th>
+                                <th class="text-white">Email</th>
+                                <th class="text-white">Tickets en charge</th>
+                                <th class="text-white">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -78,31 +78,31 @@
     </div>
 
     {# Section Tickets #}
-    <div class="card">
-        <div class="card-header">
+    <div class="card bg-dark text-white border-info">
+        <div class="card-header border-info">
             <h2 class="h4 mb-0">Tous les Tickets</h2>
         </div>
         <div class="card-body">
             {% if tickets is empty %}
-                <p class="text-muted">Aucun ticket enregistré.</p>
+                <p class="text-white">Aucun ticket enregistré.</p>
             {% else %}
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-dark table-hover border-secondary">
                         <thead>
                             <tr>
-                                <th>Titre</th>
-                                <th>Utilisateur</th>
-                                <th>Technicien</th>
-                                <th>Statut</th>
-                                <th>Priorité</th>
-                                <th>Date de création</th>
+                                <th class="text-white">Titre</th>
+                                <th class="text-white">Utilisateur</th>
+                                <th class="text-white">Technicien</th>
+                                <th class="text-white">Statut</th>
+                                <th class="text-white">Priorité</th>
+                                <th class="text-white">Date de création</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for ticket in tickets %}
                                 <tr>
                                     <td>
-                                        <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="text-decoration-none">
+                                        <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="text-decoration-none text-info">
                                             {{ ticket.titre }}
                                         </a>
                                     </td>
@@ -111,7 +111,7 @@
                                         {% if ticket.technicien %}
                                             {{ ticket.technicien.nom }}
                                         {% else %}
-                                            <span class="text-muted">Non assigné</span>
+                                            <span class="text-secondary">Non assigné</span>
                                         {% endif %}
                                     </td>
                                     <td>

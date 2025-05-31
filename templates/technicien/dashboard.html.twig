@@ -139,9 +139,9 @@
 <!-- Section des graphiques -->
 <div class="row mb-4">
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Évolution des tickets</h5>
+        <div class="card bg-card border-primary">
+            <div class="card-header d-flex justify-content-between align-items-center bg-dark border-primary">
+                <h5 class="card-title mb-0 text-white">Évolution des tickets</h5>
                 <div class="card-actions">
                     <button class="btn btn-sm btn-light-primary" onclick="window.dashboardUtils.refreshDashboardStats()">
                         <i class="fas fa-sync-alt"></i>
@@ -157,9 +157,9 @@
     </div>
     
     <div class="col-lg-4">
-        <div class="card ticket-category-distribution h-100">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Répartition par catégorie</h5>
+        <div class="card ticket-category-distribution h-100 bg-card border-info">
+            <div class="card-header bg-dark border-info">
+                <h5 class="card-title mb-0 text-white">Répartition par catégorie</h5>
             </div>
             <div class="card-body">
                 <div class="chart-container">
@@ -173,9 +173,9 @@
 <!-- Section des tickets disponibles -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
+        <div class="card bg-card border-info">
+            <div class="card-header d-flex justify-content-between align-items-center bg-dark border-info">
+                <h5 class="card-title mb-0 text-white">
                     <i class="fas fa-clipboard-list me-2 text-primary"></i>Nouveaux tickets disponibles
                 </h5>
                 <div class="dropdown">
@@ -230,10 +230,10 @@
 <!-- Section des tickets assignés et activités récentes -->
 <div class="row">
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-tasks me-2 text-warning"></i>Mes tickets en cours
+        <div class="card bg-card border-warning">
+            <div class="card-header d-flex justify-content-between align-items-center bg-dark border-warning">
+                <h5 class="card-title mb-0 text-white">
+                    <i class="fas fa-tasks me-2 text-warning"></i>Tickets assignés
                 </h5>
                 <div class="dropdown">
                     <button class="btn btn-sm btn-light-warning dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -250,9 +250,9 @@
                 {% if assignedTickets is empty %}
                     <div class="p-4 text-center">
                         <div class="empty-state">
-                            <i class="fas fa-tasks mb-3 text-muted"></i>
-                            <h6>Aucun ticket en cours</h6>
-                            <p class="text-muted">Vous n'avez pas de tickets assignés actuellement.</p>
+                            <i class="fas fa-tasks mb-3 text-light"></i>
+                            <h6 class="text-white">Aucun ticket en cours</h6>
+                            <p class="text-light">Vous n'avez pas de tickets assignés actuellement.</p>
                         </div>
                     </div>
                 {% else %}
@@ -272,58 +272,58 @@
                                     </div>
                                 </div>
                                 <div class="ticket-actions">
-                                    <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="btn btn-sm btn-light-info">
-                                        <i class="fas fa-eye"></i>
+                                    <a href="{{ path('app_ticket_show', {'id': ticket.id}) }}" class="btn btn-sm btn-info m-1">
+                                        <i class="fas fa-eye"></i> Voir
                                     </a>
                                     
                                     {% if ticket.chatbox %}
-                                        <a href="{{ path('chat_view', {'id': ticket.chatbox.id}) }}" class="btn btn-sm btn-light-primary">
-                                            <i class="fas fa-comments"></i>
+                                        <a href="{{ path('chat_view', {'id': ticket.chatbox.id}) }}" class="btn btn-sm btn-primary m-1">
+                                            <i class="fas fa-comments"></i> Chat
                                         </a>
                                     {% else %}
-                                        <a href="{{ path('technicien_create_chat', {'ticketId': ticket.id}) }}" class="btn btn-sm btn-light-primary">
-                                            <i class="fas fa-comment-medical"></i>
+                                        <a href="{{ path('technicien_create_chat', {'ticketId': ticket.id}) }}" class="btn btn-sm btn-primary m-1">
+                                            <i class="fas fa-comment-medical"></i> Créer chat
                                         </a>
                                     {% endif %}
                                     
                                     {% if ticket.statut == 'nouveau' %}
                                         <form action="{{ path('technicien_update_status', {'id': ticket.id}) }}" method="post" class="d-inline">
                                             <input type="hidden" name="status" value="en cours">
-                                            <button type="submit" class="btn btn-sm btn-light-warning">
-                                                <i class="fas fa-play"></i>
+                                            <button type="submit" class="btn btn-sm btn-warning m-1">
+                                                <i class="fas fa-play"></i> Démarrer
                                             </button>
                                         </form>
                                     {% endif %}
                                     
                                     {% if ticket.statut == 'en cours' %}
-                                        <button type="button" class="btn btn-sm btn-light-success" data-bs-toggle="modal" data-bs-target="#solutionModal{{ ticket.id }}">
-                                            <i class="fas fa-check-circle"></i>
+                                        <button type="button" class="btn btn-sm btn-success m-1" data-bs-toggle="modal" data-bs-target="#solutionModal{{ ticket.id }}">
+                                            <i class="fas fa-check-circle"></i> Résoudre
                                         </button>
                                     {% endif %}
                                     
                                     <!-- Modal pour ajouter une solution et résoudre -->
                                     <div class="modal fade" id="solutionModal{{ ticket.id }}" tabindex="-1">
                                         <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content">
+                                            <div class="modal-content bg-card text-white">
                                                 <form action="{{ path('technicien_add_solution', {'id': ticket.id}) }}" method="post">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Résoudre le ticket</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    <div class="modal-header bg-primary">
+                                                        <h5 class="modal-title text-white">Résoudre le ticket</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body">
                                                         <div class="mb-3">
-                                                            <label for="solution{{ ticket.id }}" class="form-label">Solution proposée</label>
-                                                            <textarea id="solution{{ ticket.id }}" name="solution" class="form-control" required rows="4" placeholder="Décrivez la solution appliquée..."></textarea>
+                                                            <label for="solution{{ ticket.id }}" class="form-label text-white">Solution proposée</label>
+                                                            <textarea id="solution{{ ticket.id }}" name="solution" class="form-control bg-dark text-white border-secondary" required rows="4" placeholder="Décrivez la solution appliquée..."></textarea>
                                                         </div>
                                                         <div class="form-check">
                                                             <input class="form-check-input" type="checkbox" id="markAsResolved{{ ticket.id }}" name="markAsResolved" value="1" checked>
-                                                            <label class="form-check-label" for="markAsResolved{{ ticket.id }}">
+                                                            <label class="form-check-label text-white" for="markAsResolved{{ ticket.id }}">
                                                                 Marquer comme résolu et notifier l'utilisateur
                                                             </label>
                                                         </div>
                                                     </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                                                    <div class="modal-footer bg-dark border-secondary">
+                                                        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Annuler</button>
                                                         <button type="submit" class="btn btn-success">
                                                             <i class="fas fa-check-circle me-1"></i>Valider la solution
                                                         </button>
@@ -342,9 +342,9 @@
     </div>
     
     <div class="col-md-4">
-        <div class="card recent-activities">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
+        <div class="card recent-activities bg-card border-info">
+            <div class="card-header bg-dark border-info">
+                <h5 class="card-title mb-0 text-white">
                     <i class="fas fa-history me-2 text-info"></i>Activités récentes
                 </h5>
             </div>
@@ -395,9 +395,9 @@
             </div>
         </div>
         
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
+        <div class="card mt-4 bg-card border-success">
+            <div class="card-header bg-dark border-success">
+                <h5 class="card-title mb-0 text-white">
                     <i class="fas fa-chart-pie me-2 text-success"></i>Statut des tickets
                 </h5>
             </div>

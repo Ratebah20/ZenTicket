@@ -3,14 +3,17 @@
 {% block title %}Nouvelle Catégorie{% endblock %}
 
 {% block body %}
-    <div class="container mt-4">
-        <h1>Créer une nouvelle catégorie</h1>
+    <div class="container mt-4 bg-dark">
+        <h1 class="text-white">Créer une nouvelle catégorie</h1>
 
-        {{ form_start(form) }}
-            {{ form_widget(form) }}
-            <button type="submit" class="btn btn-primary">Créer</button>
-        {{ form_end(form) }}
+        <div class="card bg-dark text-white border-secondary p-3 mb-3">
+            {{ form_start(form) }}
+                {{ form_row(form.nom, {'attr': {'class': 'bg-dark text-white border-secondary'}, 'label_attr': {'class': 'text-white'}}) }}
+                {{ form_row(form.description, {'attr': {'class': 'bg-dark text-white border-secondary'}, 'label_attr': {'class': 'text-white'}}) }}
+                <button type="submit" class="btn btn-primary mt-3">Créer</button>
+            {{ form_end(form) }}
+        </div>
 
-        <a href="{{ path('admin_categorie_index') }}" class="btn btn-secondary mt-3">Retour à la liste</a>
+        <a href="{{ path('admin_categorie_index') }}" class="btn btn-outline-light mt-3">Retour à la liste</a>
     </div>
 {% endblock %}

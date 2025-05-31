@@ -1,0 +1,206 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des tickets{% endblock %}
+
+{% block page_title %}Technicien Tickets List{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <!-- Statistiques en haut de page -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card bg-card border-danger">
+                <div class="stat-card-icon bg-danger-subtle">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <div class="stat-card-info">
+                    <h5 class="text-white">Total tickets</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="text-white mb-0">{{ totalTicketsCount }}</h3>
+                        <div class="progress stat-card-progress">
+                            <div class="progress-bar bg-danger" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-card border-warning">
+                <div class="stat-card-icon bg-warning-subtle">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-card-info">
+                    <h5 class="text-white">En cours</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="text-white mb-0">{{ assignedTickets|length }}</h3>
+                        <div class="progress stat-card-progress">
+                            <div class="progress-bar bg-warning" style="width: {{ assignedTickets|length / totalTicketsCount * 100 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-card border-success">
+                <div class="stat-card-icon bg-success-subtle">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-card-info">
+                    <h5 class="text-white">Résolus</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="text-white mb-0">{{ resolvedTicketsCount }}</h3>
+                        <div class="progress stat-card-progress">
+                            <div class="progress-bar bg-success" style="width: {{ resolvedTicketsCount / totalTicketsCount * 100 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-card border-primary">
+                <div class="stat-card-icon bg-primary-subtle">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div class="stat-card-info">
+                    <h5 class="text-white">Nouveaux</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="text-white mb-0">{{ newTicketsCount }}</h3>
+                        <div class="progress stat-card-progress">
+                            <div class="progress-bar bg-primary" style="width: {{ newTicketsCount / totalTicketsCount * 100 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des tickets assignés au technicien -->
+    <div class="card bg-card border-primary mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Mes tickets assignés</h5>
+        </div>
+        <div class="card-body">
+            {% if assignedTickets|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped border-secondary">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Titre</th>
+                                <th>Description</th>
+                                <th>Priorité</th>
+                                <th>Statut</th>
+                                <th>Date de création</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for ticket in assignedTickets %}
+                            <tr>
+                                <td class="text-white">{{ ticket.id }}</td>
+                                <td class="text-white">{{ ticket.titre }}</td>
+                                <td class="text-white">{{ ticket.description|length > 50 ? ticket.description|slice(0, 50) ~ '...' : ticket.description }}</td>
+                                <td>
+                                    <span class="badge {% if ticket.priorite == 'URGENT' %}bg-danger{% elseif ticket.priorite == 'NORMALE' %}bg-primary{% else %}bg-success{% endif %}">
+                                        {{ ticket.priorite }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if ticket.statut == 'NOUVEAU' %}bg-info{% elseif ticket.statut == 'EN_COURS' %}bg-warning{% else %}bg-success{% endif %}">
+                                        {{ ticket.statut }}
+                                    </span>
+                                </td>
+                                <td class="text-white">{{ ticket.dateCreation|date('d/m/Y H:i') }}</td>
+                                <td>
+                                    {% if ticket.chatbox is not null %}
+                                        <a href="{{ path('chat_view', {'id': ticket.chatbox.id}) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-comments"></i> Chat
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            <i class="fas fa-comments"></i> Pas de chat
+                                        </button>
+                                    {% endif %}
+                                    {% if ticket.statut != 'RÉSOLU' %}
+                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#resolveModal{{ ticket.id }}">
+                                            <i class="fas fa-check"></i> Résoudre
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            <!-- Modal pour résoudre un ticket -->
+                            <div class="modal fade" id="resolveModal{{ ticket.id }}" tabindex="-1" aria-labelledby="resolveModalLabel{{ ticket.id }}" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content bg-dark text-white">
+                                        <div class="modal-header border-primary">
+                                            <h5 class="modal-title" id="resolveModalLabel{{ ticket.id }}">Résoudre le ticket #{{ ticket.id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form action="{{ path('app_ticket_resolve', {'id': ticket.id}) }}" method="post">
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label for="solution{{ ticket.id }}" class="form-label">Solution appliquée</label>
+                                                    <textarea class="form-control bg-dark text-white border-secondary" id="solution{{ ticket.id }}" name="solution" rows="4" required></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-primary">
+                                                <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-success">Confirmer la résolution</button>
+                                            </div>
+                                            <input type="hidden" name="_token" value="{{ csrf_token('resolve' ~ ticket.id) }}">
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert bg-dark text-white border-secondary">
+                    Vous n'avez aucun ticket assigné pour le moment.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Liste des nouveaux tickets -->
+    <div class="card bg-card border-info">
+        <div class="card-header bg-info text-dark">
+            <h5 class="mb-0">Nouveaux tickets disponibles</h5>
+        </div>
+        <div class="card-body">
+            {% if newTickets|length > 0 %}
+                <div class="list-group bg-card">
+                    {% for ticket in newTickets %}
+                        <div class="list-group-item list-group-item-action bg-dark text-white border-secondary">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div>
+                                    <h5 class="mb-1">Ticket #{{ ticket.id }} - {{ ticket.titre }}</h5>
+                                    <p class="mb-1">{{ ticket.description }}</p>
+                                    <small>
+                                        <span class="badge bg-primary">{{ ticket.categorie ? ticket.categorie.nom : 'Non catégorisé' }}</span>
+                                        <span class="badge {% if ticket.priorite == 'URGENT' %}bg-danger{% elseif ticket.priorite == 'NORMALE' %}bg-primary{% else %}bg-success{% endif %}">{{ ticket.priorite }}</span>
+                                        <span class="text-muted">{{ ticket.dateCreation|date('d/m/Y H:i') }}</span>
+                                    </small>
+                                </div>
+                                <div>
+                                    <form action="{{ path('technicien_take_ticket', {'id': ticket.id}) }}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-primary">Prendre en charge</button>
+                                        <input type="hidden" name="_token" value="{{ csrf_token('take_ticket' ~ ticket.id) }}">
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert bg-dark text-white border-secondary">
+                    Aucun nouveau ticket disponible pour le moment.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

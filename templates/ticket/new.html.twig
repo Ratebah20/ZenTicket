@@ -4,7 +4,7 @@
 
 {% block body %}
     <div class="container mt-4">
-        <h1>Créer un nouveau ticket</h1>
+        <h1 class="text-white">Créer un nouveau ticket</h1>
 
         {% for label, messages in app.flashes %}
             {% for message in messages %}
@@ -16,7 +16,7 @@
         {% endfor %}
 
         {{ form_start(form, {'attr': {'class': 'needs-validation'}}) }}
-            <div class="card">
+            <div class="card bg-dark text-white border-secondary">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -39,8 +39,8 @@
                         </div>
                     </div>
 
-                    <div class="card mt-4">
-                        <div class="card-header">
+                    <div class="card mt-4 bg-secondary bg-opacity-25 border-secondary">
+                        <div class="card-header border-secondary">
                             <h5 class="card-title mb-0">Commentaire initial (optionnel)</h5>
                         </div>
                         <div class="card-body">
@@ -55,7 +55,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Créer le ticket
                 </button>
-                <a href="{{ path('app_profile_tickets') }}" class="btn btn-secondary">
+                <a href="{{ path('app_profile_tickets') }}" class="btn btn-outline-light">
                     <i class="fas fa-arrow-left"></i> Retour à la liste
                 </a>
             </div>

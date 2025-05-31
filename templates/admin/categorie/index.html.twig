@@ -3,25 +3,28 @@
 {% block title %}Liste des Catégories{% endblock %}
 
 {% block body %}
-    <div class="container mt-4">
+    <div class="container mt-4 bg-dark">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Liste des Catégories</h1>
+            <h1 class="text-white">Liste des Catégories</h1>
             <a href="{{ path('admin_categorie_new') }}" class="btn btn-primary">Créer une catégorie</a>
         </div>
 
         {% for message in app.flashes('success') %}
-            <div class="alert alert-success">
+            <div class="alert alert-success alert-dismissible fade show">
                 {{ message }}
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Fermer"></button>
             </div>
         {% endfor %}
 
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nom</th>
-                    <th>Description</th>
-                    <th>Actions</th>
+        <div class="card bg-dark text-white border-secondary mb-4">
+            <div class="card-body">
+                <table class="table table-dark table-hover border-secondary">
+                    <thead>
+                        <tr>
+                            <th class="text-white">ID</th>
+                            <th class="text-white">Nom</th>
+                            <th class="text-white">Description</th>
+                            <th class="text-white">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,10 +46,12 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="4">Aucune catégorie trouvée</td>
+                    <td colspan="4" class="text-white">Aucune catégorie trouvée</td>
                 </tr>
             {% endfor %}
-            </tbody>
-        </table>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 {% endblock %}

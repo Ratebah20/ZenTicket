@@ -7,11 +7,12 @@
         <title>{% block title %}Bienvenue!{% endblock %} - ZenTicket</title>
         {% block stylesheets %}
             {{ encore_entry_link_tags('app') }}
+            {{ encore_entry_link_tags('global') }}
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
         {% endblock %}
     </head>
-    <body>
-        <div class="app-container">
+    <body class="dark-theme">
+        <div class="app-wrapper">
             <!-- Sidebar -->
             {% include '_partials/_sidebar.html.twig' %}
             
@@ -21,7 +22,7 @@
                 
                 <!-- Main Content -->
                 <main class="main-content">
-                    <div class="container-fluid">
+                    <div class="page-content">
                         <!-- Flash Messages -->
                         {% for label, messages in app.flashes %}
                             {% for message in messages %}
@@ -63,6 +64,7 @@
         </div>
         
         {% block javascripts %}
+            <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
             {{ encore_entry_script_tags('app') }}
             {% block page_scripts %}{% endblock %}
         {% endblock %}

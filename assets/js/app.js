@@ -2,11 +2,39 @@
  * Application principale
  */
 import 'bootstrap';
+import '../styles/app.scss';
 
-// Importer le CSS depuis les fichiers JS n'est pas nécessaire car nous utilisons addStyleEntry dans webpack
-
-// Fonctionnalité pour la sidebar responsive
+// Initialiser l'application
 document.addEventListener('DOMContentLoaded', function() {
+    // Setup CSRF token pour les requêtes AJAX
+    const token = document.querySelector('meta[name="csrf-token"]');
+    if (token && typeof $ !== 'undefined') {
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader('X-CSRF-TOKEN', token.content);
+            }
+        });
+    }
+    
+    // Initialiser les tooltips Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Initialiser les popovers Bootstrap
+    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    const popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+        return new bootstrap.Popover(popoverTriggerEl);
+    });
+    
+    // Initialiser les dropdowns Bootstrap (important pour le navbar)
+    const dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+    const dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+        return new bootstrap.Dropdown(dropdownToggleEl);
+    });
+
+    // Fonctionnalité pour la sidebar responsive
     // Toggle pour la sidebar sur mobile
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
@@ -52,13 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     });
     
-    // Initialisation des tooltips Bootstrap
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-    
-    // Initialisation des popovers Bootstrap
-    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-    [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
+    // Les tooltips et popovers sont déjà initialisés plus haut dans le code
     
     // Fonction pour afficher des notifications
     window.showNotification = function(message, type = 'info') {
