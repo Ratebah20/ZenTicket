@@ -49,5 +49,12 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Expose port 9000 (PHP-FPM)
 EXPOSE 9000
 
-# Start PHP-FPM
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Copy entrypoint script
+COPY docker/php/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+RUN chmod +x /usr/local/bin/docker-entrypoint
+
+ENTRYPOINT ["docker-entrypoint"]
 CMD ["php-fpm"]

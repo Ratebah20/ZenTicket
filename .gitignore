@@ -26,12 +26,13 @@
 
 ###> symfony/webpack-encore-bundle ###
 /node_modules/
+/public/build/
 npm-debug.log
 yarn-error.log
 ###< symfony/webpack-encore-bundle ###
 
 ###> lexik/jwt-authentication-bundle ###
-
+/config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
 
 ###> api-platform/core ###
@@ -74,7 +75,10 @@ Thumbs.db
 *.old
 ###< Fichiers de sauvegarde ###
 
-
+###> Mercure ###
+mercure.db
+/config/caddy/
+###< Mercure ###
 
 ###> Fichiers spécifiques au projet ###
 # Backup de base de données
