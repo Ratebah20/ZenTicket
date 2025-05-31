@@ -104,8 +104,8 @@
                         <h4 class="mb-0"><i class="fas fa-robot me-2"></i>Assistant IA</h4>
                     </div>
                     <div class="card-body">
-                        <p>Bienvenue dans l'assistance IA! Décrivez votre problème ci-dessous et notre assistant vous aidera à le résoudre.</p>
-                        <p>Si l'assistant ne parvient pas à résoudre votre problème, vous pourrez créer un ticket d'assistance technique.</p>
+                        <p class="text-white">Bienvenue dans l'assistance IA! Décrivez votre problème ci-dessous et notre assistant vous aidera à le résoudre.</p>
+                        <p class="text-white">Si l'assistant ne parvient pas à résoudre votre problème, vous pourrez créer un ticket d'assistance technique.</p>
                     </div>
                 </div>
                 
@@ -113,10 +113,7 @@
                     <div class="chat-header">
                         <h2><i class="fas fa-comment-dots me-2"></i>Conversation avec l'assistant</h2>
                         <div class="chat-actions">
-                            <button id="test-mercure-button" class="btn btn-sm btn-outline-info" title="Tester la connexion Mercure">
-                                <i class="fas fa-sync"></i> Tester connexion
-                            </button>
-                            <span id="mercure-status" class="badge bg-secondary">Non connecté</span>
+                            
                         </div>
                     </div>
                     
@@ -144,7 +141,7 @@
                 </div>
                 
                 <div class="create-ticket-container">
-                    <p class="mb-3">Si l'assistant n'a pas pu résoudre votre problème, vous pouvez créer un ticket d'assistance technique :</p>
+                    <p class="mb-3 text-white">Si l'assistant n'a pas pu résoudre votre problème, vous pouvez créer un ticket d'assistance technique :</p>
                     <a href="{{ path('app_ai_chat_create_ticket', {id: chatbox.id}) }}" class="btn btn-warning create-ticket-button">
                         <i class="fas fa-ticket-alt me-2"></i>Créer un ticket d'assistance
                     </a>
