@@ -26,11 +26,62 @@
 
 ###> symfony/webpack-encore-bundle ###
 /node_modules/
-/public/build/
 npm-debug.log
 yarn-error.log
 ###< symfony/webpack-encore-bundle ###
 
 ###> lexik/jwt-authentication-bundle ###
-/config/jwt/*.pem
+
 ###< lexik/jwt-authentication-bundle ###
+
+###> api-platform/core ###
+# Ignorer toutes les configurations API Platform
+/config/routes/api_platform.yaml
+/config/packages/api_platform.yaml
+/config/packages/*/api_platform.yaml
+###< api-platform/core ###
+
+###> docker ###
+# Fichiers Docker locaux
+docker/mysql/data/
+docker/mysql/*.sql
+docker/mercure/data/
+.docker/
+###< docker ###
+
+###> IDE et éditeurs ###
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+###< IDE et éditeurs ###
+
+###> Logs et fichiers temporaires ###
+*.log
+!npm-debug.log
+!yarn-error.log
+*.cache
+*.tmp
+*.temp
+###< Logs et fichiers temporaires ###
+
+###> Fichiers de sauvegarde ###
+*.bak
+*.backup
+*.old
+###< Fichiers de sauvegarde ###
+
+
+
+###> Fichiers spécifiques au projet ###
+# Backup de base de données
+*.sql
+!docker/mysql/init.sql
+# Fichiers uploadés
+/public/uploads/
+# Fichiers de test
+/tests/coverage/
+###< Fichiers spécifiques au projet ###
