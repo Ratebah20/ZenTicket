@@ -5,11 +5,6 @@
 {% block stylesheets %}
     {{ parent() }}
     <style>
-        /* Styles supplémentaires pour le thème sombre */
-        body {
-            background-color: var(--bg-dark, #0f111a);
-            color: var(--text-primary, #ffffff);
-        }
         .chat-container {
             border: 1px solid var(--border-color, #2a2d3a);
             border-radius: 8px;
@@ -55,37 +50,22 @@
             border-radius: 0.5rem;
             max-width: 80%;
             transition: background-color 0.3s ease;
-            position: relative;
         }
         .message.sent {
             background: #007bff;
-            color: white !important;
+            color: white;
             margin-left: auto;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         .message.received {
-            background: rgba(52, 58, 79, 0.9);
-            color: #e0e0e0 !important;
-            border: 1px solid #444;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            border: 1px solid #dee2e6;
             margin-right: auto;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
         .message.ai {
             background: rgba(111, 66, 193, 0.9);
-            color: white !important;
+            color: white;
             margin-right: auto;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* Style pour la classe qui pourrait être utilisée dans chat.js */
-        .message-content {
-            color: inherit !important;
-        }
-        
-        /* Assurer la visibilité du texte des messages */
-        .messages-container .message * {
-            color: inherit !important;
         }
         
         .message-input {
@@ -98,7 +78,7 @@
         
         .typing-indicator {
             font-size: 0.875rem;
-            color: #adb5bd;
+            color: #6c757d;
             margin-bottom: 0.5rem;
             font-style: italic;
         }
@@ -119,11 +99,11 @@
     <div class="container-fluid py-4">
         <div class="row">
             <div class="col-md-8 offset-md-2">
-                <div class="card mb-4 bg-card">
+                <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
                         <h4 class="mb-0"><i class="fas fa-robot me-2"></i>Assistant IA</h4>
                     </div>
-                    <div class="card-body text-white">
+                    <div class="card-body">
                         <p>Bienvenue dans l'assistance IA! Décrivez votre problème ci-dessous et notre assistant vous aidera à le résoudre.</p>
                         <p>Si l'assistant ne parvient pas à résoudre votre problème, vous pourrez créer un ticket d'assistance technique.</p>
                     </div>
@@ -132,6 +112,12 @@
                 <div class="chat-container">
                     <div class="chat-header">
                         <h2><i class="fas fa-comment-dots me-2"></i>Conversation avec l'assistant</h2>
+                        <div class="chat-actions">
+                            <button id="test-mercure-button" class="btn btn-sm btn-outline-info" title="Tester la connexion Mercure">
+                                <i class="fas fa-sync"></i> Tester connexion
+                            </button>
+                            <span id="mercure-status" class="badge bg-secondary">Non connecté</span>
+                        </div>
                     </div>
                     
                     <div class="messages-container" id="messages">
@@ -143,7 +129,7 @@
                     <div class="message-input">
                         <div class="flex-grow-1">
                             <textarea 
-                                class="form-control bg-dark text-white border-secondary" 
+                                class="form-control" 
                                 id="messageInput" 
                                 rows="2" 
                                 placeholder="Décrivez votre problème..."
@@ -158,7 +144,7 @@
                 </div>
                 
                 <div class="create-ticket-container">
-                    <p class="mb-3 text-white">Si l'assistant n'a pas pu résoudre votre problème, vous pouvez créer un ticket d'assistance technique :</p>
+                    <p class="mb-3">Si l'assistant n'a pas pu résoudre votre problème, vous pouvez créer un ticket d'assistance technique :</p>
                     <a href="{{ path('app_ai_chat_create_ticket', {id: chatbox.id}) }}" class="btn btn-warning create-ticket-button">
                         <i class="fas fa-ticket-alt me-2"></i>Créer un ticket d'assistance
                     </a>
@@ -170,14 +156,6 @@
 
 {% block javascripts %}
     {{ parent() }}
-    <style>
-        /* Styles injectés par JavaScript pour assurer la visibilité */
-        /* Ces styles sont appliqués après le chargement du DOM pour remplacer tout style qui pourrait être appliqué par chat.js */
-        .message.user-message .message-content,
-        .message.ai-message .message-content {
-            color: inherit !important;
-        }
-    </style>
     <script src="{{ asset('js/eventsource-polyfill.js') }}"></script>
     <script src="{{ asset('js/chat.js') }}"></script>
     <script>
