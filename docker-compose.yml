@@ -69,7 +69,23 @@ services:
     working_dir: /var/www/symfony
     volumes:
       - ./:/var/www/symfony
-    command: tail -f /dev/null
+    # Installation automatique sans fichier externe
+    command: >
+      sh -c "
+        echo '🎨 Installation des assets...' &&
+        while [ ! -f package.json ]; do
+          echo 'Attente des fichiers...'
+          sleep 2
+        done &&
+        if [ ! -d node_modules ]; then
+          echo '📦 Installation NPM...'
+          npm install
+        fi &&
+        echo '🔨 Compilation des assets...'
+        npm run build || echo 'Pas de script build' &&
+        echo '✅ Node prêt!' &&
+        tail -f /dev/null
+      "
     networks:
       - zenticket_network
       

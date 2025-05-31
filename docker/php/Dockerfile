@@ -49,12 +49,50 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Expose port 9000 (PHP-FPM)
 EXPOSE 9000
 
-# Copy composer files
-COPY composer.json composer.lock ./
+# MODIFICATION : Script d'installation automatique intégré
+RUN echo '#!/bin/bash\n\
+set -e\n\
+\n\
+# Attendre que les fichiers soient montés\n\
+while [ ! -f "/var/www/symfony/composer.json" ]; do\n\
+    echo "Attente du montage des fichiers..."\n\
+    sleep 2\n\
+done\n\
+\n\
+# Installer Composer si vendor n existe pas\n\
+if [ ! -d "/var/www/symfony/vendor" ] || [ ! -f "/var/www/symfony/vendor/autoload.php" ]; then\n\
+    echo "Installation des dépendances Composer..."\n\
+    cd /var/www/symfony && composer install --no-interaction --optimize-autoloader\n\
+else\n\
+    echo "Dépendances Composer déjà installées"\n\
+fi\n\
+\n\
+# Attendre MySQL et créer la base\n\
+if [ ! -z "$DATABASE_URL" ]; then\n\
+    echo "Attente de MySQL..."\n\
+    while ! mysql -h database -u root -proot -e "SELECT 1" > /dev/null 2>&1; do\n\
+        sleep 3\n\
+    done\n\
+    echo "MySQL prêt!"\n\
+    \n\
+    # Créer la base de données\n\
+    cd /var/www/symfony\n\
+    php bin/console doctrine:database:create --if-not-exists || true\n\
+    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration || true\n\
+fi\n\
+\n\
+# Permissions\n\
+chmod -R 777 /var/www/symfony/var 2>/dev/null || true\n\
+chmod -R 777 /var/www/symfony/public 2>/dev/null || true\n\
+\n\
+# Cache\n\
+cd /var/www/symfony && php bin/console cache:clear 2>/dev/null || true\n\
+\n\
+echo "Application prête!"\n\
+\n\
+# Lancer PHP-FPM\n\
+exec php-fpm' > /usr/local/bin/docker-php-entrypoint-custom && \
+    chmod +x /usr/local/bin/docker-php-entrypoint-custom
 
-# Copy entrypoint script
-COPY docker/php/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
-RUN chmod +x /usr/local/bin/docker-entrypoint
-
-ENTRYPOINT ["docker-entrypoint"]
-CMD ["php-fpm"]
+# Utiliser notre script comme entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-php-entrypoint-custom"]
