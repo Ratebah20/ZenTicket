@@ -1,146 +1,212 @@
-# Guide Docker pour ZenTicket
+# ZenTicket - Système de Gestion de Tickets
 
-Ce document explique comment déployer et utiliser ZenTicket avec Docker.
+Application de gestion de tickets avec chat en temps réel, développée avec Symfony 6.4.
+
+# Guide d'installation Docker pour ZenTicket
+
+**Remarque :**
+L'installation est entièrement automatisée. Veuillez patienter au moins 5 minutes lors du premier lancement.
+Notez également que la communication avec l'IA dans l’environnement Docker est limitée à 3 requêtes maximum. Au-delà, vous devrez redémarrer docker-compose pour réinitialiser le compteur. Dans certains cas, un simple rechargement de la page peut suffire à rétablir le fonctionnement.
 
 ## Prérequis
 
-- Docker Desktop installé et fonctionnel sur votre machine
-- Docker Compose installé (généralement inclus dans Docker Desktop)
+- **Docker Desktop** installé et fonctionnel
+  - [Windows/Mac](https://www.docker.com/products/docker-desktop)
+  - Linux : Docker Engine + Docker Compose
+- Git (pour cloner le dépôt) ou (téléchargement du zip)
 
-## Services disponibles
+## Installation avec Docker
 
-Le déploiement Docker de ZenTicket comprend les services suivants :
-
-1. **Base de données MySQL** (Port 3308)
-   - Accessible via phpMyAdmin ou directement via un client MySQL
-   - Utilisateur: root, Mot de passe: root
-
-2. **PHP-FPM 8.2**
-   - Inclut toutes les extensions PHP nécessaires pour Symfony
-   - Composer et Symfony CLI préinstallés
-
-3. **Nginx** (Port 8080)
-   - Serveur web configuré pour Symfony
-   - L'application est accessible à l'adresse http://localhost:8080
-
-4. **phpMyAdmin** (Port 8081)
-   - Interface d'administration pour MySQL
-   - Accessible à l'adresse http://localhost:8081
-
-5. **Node.js**
-   - Pour la compilation des assets avec Webpack Encore
-
-6. **Mercure** (Port 3000)
-   - Serveur pour les notifications en temps réel
-   - Hub accessible à http://localhost:3000/.well-known/mercure
-
-## Installation et démarrage
-
-### Option 1 : Utiliser Docker Compose directement
+### 1. Récupération du projet
 
 ```bash
-# Construire les images
-docker-compose build
+# Cloner le projet
+git clone https://github.com/Ratebah20/ZenTicket.git
+cd ZenTicket
+```
 
-# Démarrer les services
+### 2. Configuration
+
+```bash
+# Copier les fichiers d'environnement
+ajouter le fichier .env.local dans le dossier source 
+
+# Modifier les variables d'environnement selon vos besoins dans .env.local
+# Particulièrement DATABASE_URL et MERCURE_PUBLIC_URL
+```
+
+### 2.1 Installation des dépendances
+
+```bash
+# Installer les dépendances
+docker-compose build
+```
+
+### 3. Démarrage des conteneurs Docker
+
+```bash
+# Lancer l'environnement Docker
 docker-compose up -d
 ```
 
-### Option 2 : Utiliser le Makefile (recommandé)
+**L'installation complète se fait automatiquement :**
+- ✅ Serveur web Nginx
+- ✅ PHP-FPM avec toutes les extensions requises
+- ✅ MySQL avec initialisation de la base de données
+- ✅ Mercure pour les communications en temps réel
+- ✅ PHPMyAdmin pour la gestion de base de données
+
+**important :** Temps d'installation estimé** : 3-5 minutes (première installation)
+
+## Accès à l'application
+
+- **Application Web** : http://localhost:8080
+- **PHPMyAdmin** : http://localhost:8081 ( login : root / password : root)
+- **Hub Mercure** : http://localhost:3001/.well-known/mercure
+
+## Commandes Docker utiles
 
 ```bash
-# Installer et démarrer tous les services
-make install
+# Démarrer les conteneurs
+docker-compose up -d
 
-# Ou étape par étape
-make build
-make up
-make composer-install
-make npm-install
-make database-create
-make migrations
-make npm-build
+# Arrêter les conteneurs
+docker-compose down
+
+# Voir les logs
+docker-compose logs -f
+
+# Exécuter une commande dans le conteneur PHP
+docker-compose exec php bash
+
+# Exécuter une commande Symfony
+docker-compose exec php bin/console [commande]
 ```
 
-## Configuration de l'environnement
+## Configuration avancée
 
-Le fichier `.env.local` a été configuré pour fonctionner avec les services Docker. Les paramètres importants incluent :
+### Personnalisation des ports
 
-- La connexion à la base de données utilise le nom du conteneur Docker `database` comme hôte
-- La clé API OpenAI est configurée pour le chat IA
-- Les paramètres de Mercure sont configurés pour le service de notifications en temps réel
+Si vous avez besoin de modifier les ports, éditez le fichier `docker-compose.yml` :
+
+```yaml
+# Pour changer le port de l'application web (8080 par défaut)
+nginx:
+  ports:
+    - "8080:80"
+
+# Pour changer le port de Mercure (3001 par défaut)
+mercure:
+  ports:
+    - "3001:80"
+```
+
+### Persistance des données
+
+Les données sont stockées dans des volumes Docker :
+- `db_data` : Données MySQL
+- `mercure_data` : Données Mercure
+
+
+Une fois les conteneurs démarrés, accédez à :
+
+| Service | URL | Identifiants |
+|---------|-----|--------------|
+| **Application** | http://localhost:8080 | ADMIN : admin@3innov.fr / admin123 | TECHNICIEN : tech.bdd@3innov.fr / tech123 | USER : crée votre compte utilisateur
+| **phpMyAdmin** | http://localhost:8081 | root / root |
+| **Emails** | http://localhost:8025 | - |
+| **Mercure** | http://localhost:3001/.well-known/mercure | - | (résultat page avec "unauthorised")
 
 ## Commandes utiles
 
-### Gestion des conteneurs
+### Gestion de Docker
 
-- `make up` - Démarrer les conteneurs
-- `make down` - Arrêter les conteneurs
-- `make restart` - Redémarrer les conteneurs
-- `make logs` - Voir les logs
+```bash
+# Voir l'état des conteneurs
+docker-compose ps
 
-### Symfony et dépendances
+# Voir les logs
+docker-compose logs -f
 
-- `make composer-install` - Installer les dépendances PHP
-- `make npm-install` - Installer les dépendances JavaScript
-- `make npm-build` - Compiler les assets
-- `make cache-clear` - Vider le cache Symfony
+# Arrêter l'application
+docker-compose down
 
-### Base de données
+# Redémarrer l'application
+docker-compose restart
+```
 
-- `make database-create` - Créer la base de données
-- `make migrations` - Exécuter les migrations
-- `make reset-db` - Réinitialiser la base de données (suppression et recréation)
+### Accès aux conteneurs (si nécessaire)
 
-### Accès aux shells
+```bash
+# Console PHP
+docker exec -it zenticket_php bash
 
-- `make console` - Accéder à un shell dans le conteneur PHP
-- `make mysql` - Accéder à la console MySQL
+# Base de données MySQL
+docker exec -it zenticket_mysql mysql -u root -proot
+```
 
 ## Dépannage
 
-### Problèmes courants
+### L'application ne se lance pas ?
 
-1. **Ports déjà utilisés**
-   - Si les ports 8080, 8081 ou 3306 sont déjà utilisés sur votre machine, modifiez les mappings de ports dans le fichier `docker-compose.yml`
+1. **Vérifiez que Docker est lancé**
+   ```bash
+   docker --version
+   ```
 
-2. **Erreurs de permission**
-   - Assurez-vous que les dossiers `var/cache` et `var/log` sont accessibles en écriture (chmod 777)
+2. **Vérifiez les logs**
+   ```bash
+   docker-compose logs
+   ```
 
-3. **Problèmes avec Mercure**
-   - Vérifiez que les clés JWT sont correctement configurées dans `.env.local`
+3. **Relancez l'installation**
+   ```bash
+   docker-compose down -v
+   docker-compose up -d
+   ```
 
-4. **Erreurs de base de données**
-   - Vérifiez que le fichier d'initialisation SQL est présent dans `docker/mysql/init.sql`
-   - Utilisez phpMyAdmin pour diagnostiquer les problèmes de base de données
+### Page blanche ou erreur 500 ?
 
-## Fonctionnalités spécifiques
-
-### Chat IA (OpenAI)
-
-Le service de chat IA nécessite une clé API OpenAI valide. La clé doit être configurée dans le fichier `.env.local`. Utilisez la commande Symfony créée spécifiquement pour mettre à jour cette clé :
-
+Les permissions se corrigent automatiquement, mais si besoin :
 ```bash
-make console
-php bin/console app:update-ia-api-key
+docker exec zenticket_php chmod -R 777 var/ public/
 ```
 
-N'oubliez pas que pour les requêtes AJAX du chat IA, le token CSRF doit être envoyé dans l'en-tête HTTP 'X-CSRF-TOKEN'.
+### Port déjà utilisé ?
 
-### Mercure (Notifications en temps réel)
-
-Le hub Mercure est configuré et accessible via Nginx. Assurez-vous que votre code JavaScript utilise l'URL publique pour se connecter au hub :
-
-```javascript
-const hubUrl = 'http://localhost:3000/.well-known/mercure';
+Modifiez les ports dans `docker-compose.yml` :
+```yaml
+services:
+  nginx:
+    ports:
+      - "8090:80"  # Changez 8080 en 8090
 ```
 
-## Notes de production
+### Page 502 Bad Gateway
 
-Pour un déploiement en production, pensez à :
+**Si vous avez une page 502 Bad Gateway, veuillez attendre quelques minutes en plus**
 
-1. Modifier les mots de passe par défaut
-2. Configurer des clés JWT sécurisées pour Mercure
-3. Utiliser des volumes montés ou nommés pour les données persistantes
-4. Configurer HTTPS avec Let's Encrypt ou un autre service de certificats
-5. Ajuster les paramètres PHP et MySQL pour les performances
+
+### problème avec chat en temps réel
+
+**Si vous avez un problème avec le chat en temps réel, vous devez recharger votre page web**
+
+
+
+## Architecture
+
+- **PHP 8.2** avec Symfony 6.4
+- **MySQL 8.0** pour la base de données
+- **Nginx** comme serveur web
+- **Mercure** pour le temps réel
+- **Node.js** pour la compilation des assets
+
+## Support
+
+En cas de problème :
+1. Vérifiez les logs : `docker-compose logs`
+2. Redémarrez : `docker-compose restart`
+3. Réinstallez : `docker-compose down -v && docker-compose up -d`
+
+---
+
