@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : sam. 31 mai 2025 à 13:30
+-- Généré le : dim. 01 juin 2025 à 13:00
 -- Version du serveur : 9.1.0
 -- Version de PHP : 8.3.14
 
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS `categorie` (
   `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `IDX_497DD6347EE5403C` (`administrateur_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `categorie`
@@ -71,7 +71,8 @@ INSERT INTO `categorie` (`id`, `administrateur_id`, `nom`, `description`) VALUES
 (4, NULL, 'Sécurité', 'Questions de sécurité'),
 (5, NULL, 'Maintenance', 'Maintenance préventive'),
 (6, NULL, 'Cloud', 'Services cloud et hébergement'),
-(7, NULL, 'Base de données', 'Problèmes de bases de données');
+(7, NULL, 'Base de données', 'Problèmes de bases de données'),
+(8, 1, 'tesdt', 'test');
 
 -- --------------------------------------------------------
 
@@ -89,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `chatbox` (
   PRIMARY KEY (`id`),
   KEY `IDX_7472FC2F489A6E65` (`ia_id`),
   KEY `IDX_7472FC2FA76ED395` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `chatbox`
@@ -125,7 +126,8 @@ INSERT INTO `chatbox` (`id`, `ia_id`, `user_id`, `created_at`, `is_temporary`) V
 (27, NULL, NULL, NULL, 0),
 (28, NULL, 4, '2025-05-29 10:13:34', 0),
 (29, NULL, NULL, NULL, 0),
-(30, NULL, NULL, NULL, 0);
+(30, NULL, NULL, NULL, 0),
+(31, 4, 17, '2025-06-01 08:55:06', 1);
 
 -- --------------------------------------------------------
 
@@ -145,6 +147,27 @@ CREATE TABLE IF NOT EXISTS `commentaire` (
   KEY `IDX_67F068BC700047D2` (`ticket_id`),
   KEY `IDX_67F068BC60BB6FE6` (`auteur_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `doctrine_migration_versions`
+--
+
+DROP TABLE IF EXISTS `doctrine_migration_versions`;
+CREATE TABLE IF NOT EXISTS `doctrine_migration_versions` (
+  `version` varchar(191) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `executed_at` datetime DEFAULT NULL,
+  `execution_time` int DEFAULT NULL,
+  PRIMARY KEY (`version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+--
+-- Déchargement des données de la table `doctrine_migration_versions`
+--
+
+INSERT INTO `doctrine_migration_versions` (`version`, `executed_at`, `execution_time`) VALUES
+('DoctrineMigrations\\Version20250601125845', '2025-06-01 12:59:35', 577);
 
 -- --------------------------------------------------------
 
@@ -177,7 +200,7 @@ CREATE TABLE IF NOT EXISTS `ia` (
   `default_context` longtext COLLATE utf8mb4_unicode_ci,
   `additional_params` json DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `ia`
@@ -186,7 +209,8 @@ CREATE TABLE IF NOT EXISTS `ia` (
 INSERT INTO `ia` (`id`, `nom`, `api_key`, `model`, `temperature`, `default_context`, `additional_params`) VALUES
 (1, 'Assistant 3INNOV', '%env(OPENAI_API_KEY)%', 'gpt-3.5-turbo', 0.7, 'Tu es un assistant technique pour 3INNOV.', '{\"max_tokens\": 500, \"presence_penalty\": 0.6}'),
 (2, 'Assistant IA', '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', 'gpt-3.5-turbo', 0.7, 'Je suis un assistant helpdesk qui aide les utilisateurs avec leurs problèmes techniques.', '[]'),
-(3, 'Assistant IA', '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', 'gpt-3.5-turbo', 0.7, 'Je suis un assistant helpdesk qui aide les utilisateurs avec leurs problèmes techniques.', '[]');
+(3, 'Assistant IA', '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', 'gpt-3.5-turbo', 0.7, 'Je suis un assistant helpdesk qui aide les utilisateurs avec leurs problèmes techniques.', '[]'),
+(4, 'Assistant IA', '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', 'gpt-3.5-turbo', 0.7, 'Je suis un assistant helpdesk qui aide les utilisateurs avec leurs problèmes techniques.', '[]');
 
 -- --------------------------------------------------------
 
@@ -215,7 +239,7 @@ DROP TABLE IF EXISTS `message`;
 CREATE TABLE IF NOT EXISTS `message` (
   `id` int NOT NULL AUTO_INCREMENT,
   `chatbox_id` int DEFAULT NULL,
-  `message` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `message` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `timestamp` datetime NOT NULL,
   `message_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `reactions` json DEFAULT NULL,
@@ -224,7 +248,7 @@ CREATE TABLE IF NOT EXISTS `message` (
   `user_message_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `IDX_B6BD307F53527A38` (`chatbox_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=178 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `message`
@@ -330,7 +354,84 @@ INSERT INTO `message` (`id`, `chatbox_id`, `message`, `timestamp`, `message_type
 (97, 30, 'salut comment tu vas', '2025-05-31 08:48:16', 'user', '[]', 0, 16, NULL),
 (98, 29, 'dzq', '2025-05-31 13:09:17', 'user', '[]', 0, 4, NULL),
 (99, 29, 'hello', '2025-05-31 13:09:26', 'user', '[]', 0, 4, NULL),
-(100, 29, 'bonjour', '2025-05-31 13:09:56', 'user', '[]', 0, 16, NULL);
+(100, 29, 'bonjour', '2025-05-31 13:09:56', 'user', '[]', 0, 16, NULL),
+(101, 29, 'hezllo', '2025-05-31 14:38:02', 'user', '[]', 0, 4, NULL),
+(102, 29, 'dqD', '2025-05-31 14:38:09', 'user', '[]', 0, 4, NULL),
+(103, 26, 'test', '2025-05-31 15:31:15', 'user', '[]', 0, 16, NULL),
+(104, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 15:31:17', 'ai', '[]', 0, 3, 103),
+(105, 26, 'dzqd', '2025-05-31 15:31:51', 'user', '[]', 0, 16, NULL),
+(106, 26, 'Il semble y avoir une erreur de saisie. Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 15:31:53', 'ai', '[]', 0, 3, 105),
+(107, 26, 'test', '2025-05-31 15:35:16', 'user', '[]', 0, 16, NULL),
+(108, 26, 'Il semble y avoir un problème avec la communication. Comment puis-je vous aider ?', '2025-05-31 15:35:17', 'ai', '[]', 0, 3, 107),
+(109, 26, 'salut', '2025-05-31 15:35:51', 'user', '[]', 0, 16, NULL),
+(110, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 15:35:53', 'ai', '[]', 0, 3, 109),
+(111, 26, 'test', '2025-05-31 15:37:13', 'user', '[]', 0, 16, NULL),
+(112, 26, 'Il semble y avoir un problème de communication. Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 15:37:14', 'ai', '[]', 0, 3, 111),
+(113, 26, 'salut', '2025-05-31 15:38:08', 'user', '[]', 0, 16, NULL),
+(114, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 15:38:09', 'ai', '[]', 0, 3, 113),
+(115, 26, 'hello', '2025-05-31 15:41:31', 'user', '[]', 0, 16, NULL),
+(116, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 15:41:32', 'ai', '[]', 0, 3, 115),
+(117, 26, 'testr', '2025-05-31 15:47:50', 'user', '[]', 0, 16, NULL),
+(118, 26, 'Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 15:47:51', 'ai', '[]', 0, 3, 117),
+(119, 26, 'merci', '2025-05-31 15:48:35', 'user', '[]', 0, 16, NULL),
+(120, 26, 'De rien ! N\'hésitez pas si vous avez d\'autres questions. Bonne journée !', '2025-05-31 15:48:36', 'ai', '[]', 0, 3, 119),
+(121, 26, 'fgfdgdf', '2025-05-31 15:55:13', 'user', '[]', 0, 16, NULL),
+(122, 26, 'Il semble y avoir une erreur de saisie. Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 15:55:14', 'ai', '[]', 0, 3, 121),
+(123, 26, 'lkj', '2025-05-31 16:03:28', 'user', '[]', 0, 16, NULL),
+(124, 26, 'Il semble y avoir une erreur de saisie. Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 16:03:28', 'ai', '[]', 0, 3, 123),
+(125, 26, 'salut', '2025-05-31 16:05:13', 'user', '[]', 0, 16, NULL),
+(126, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 16:05:14', 'ai', '[]', 0, 3, 125),
+(127, 26, 'salut', '2025-05-31 16:07:16', 'user', '[]', 0, 16, NULL),
+(128, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 16:07:17', 'ai', '[]', 0, 3, 127),
+(129, 26, 'merci', '2025-05-31 16:09:07', 'user', '[]', 0, 16, NULL),
+(130, 26, 'De rien ! N\'hésitez pas à me poser des questions si vous avez besoin d\'aide.', '2025-05-31 16:09:08', 'ai', '[]', 0, 3, 129),
+(131, 26, 'hello', '2025-05-31 16:11:12', 'user', '[]', 0, 16, NULL),
+(132, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 16:11:13', 'ai', '[]', 0, 3, 131),
+(133, 26, 'merci', '2025-05-31 16:11:22', 'user', '[]', 0, 16, NULL),
+(134, 26, 'De rien ! Si vous avez d\'autres questions, n\'hésitez pas à me les poser.', '2025-05-31 16:11:23', 'ai', '[]', 0, 3, 133),
+(135, 26, 'salut', '2025-05-31 16:13:39', 'user', '[]', 0, 16, NULL),
+(136, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 16:13:40', 'ai', '[]', 0, 3, 135),
+(137, 26, 'dz', '2025-05-31 16:50:33', 'user', '[]', 0, 16, NULL),
+(138, 26, 'Il semble y avoir une erreur dans votre message. Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 16:50:34', 'ai', '[]', 0, 3, 137),
+(139, 26, 'merci', '2025-05-31 16:53:28', 'user', '[]', 0, 16, NULL),
+(140, 26, 'De rien ! N\'hésitez pas à me contacter si vous avez besoin d\'aide. Bonne journée !', '2025-05-31 16:53:30', 'ai', '[]', 0, 3, 139),
+(141, 26, 'hello', '2025-05-31 16:57:18', 'user', '[]', 0, 16, NULL),
+(142, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 16:57:20', 'ai', '[]', 0, 3, 141),
+(143, 26, 'salut', '2025-05-31 17:03:45', 'user', '[]', 0, 16, NULL),
+(144, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 17:03:46', 'ai', '[]', 0, 3, 143),
+(145, 26, 'hello', '2025-05-31 17:07:00', 'user', '[]', 0, 16, NULL),
+(146, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 17:07:01', 'ai', '[]', 0, 3, 145),
+(147, 26, 'hello', '2025-05-31 17:39:20', 'user', '[]', 0, 16, NULL),
+(148, 26, 'Bonjour ! Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 17:39:22', 'ai', '[]', 0, 3, 147),
+(149, 26, 'test', '2025-05-31 17:45:23', 'user', '[]', 0, 16, NULL),
+(150, 26, 'Comment puis-je vous aider aujourd\'hui ?', '2025-05-31 17:45:24', 'ai', '[]', 0, 3, 149),
+(151, 26, 'dzqd', '2025-05-31 17:48:16', 'user', '[]', 0, 16, NULL),
+(152, 26, 'Il semble y avoir une erreur dans votre message. Comment puis-je vous assister aujourd\'hui ?', '2025-05-31 17:48:17', 'ai', '[]', 0, 3, 151),
+(153, 26, 'test', '2025-05-31 17:59:01', 'user', '[]', 0, 16, NULL),
+(154, 26, 'Il semble y avoir un problème de communication. Comment puis-je vous aider ?', '2025-05-31 17:59:02', 'ai', '[]', 0, 3, 153),
+(155, 26, 'merci pour ton aide', '2025-05-31 17:59:13', 'user', '[]', 0, 16, NULL),
+(156, 26, 'De rien ! N\'hésitez pas si vous avez d\'autres questions ou besoin d\'aide.', '2025-05-31 17:59:14', 'ai', '[]', 0, 3, 155),
+(157, 29, 'd\'accord', '2025-05-31 18:04:06', 'user', '[]', 0, 16, NULL),
+(158, 26, 'merci pour ton aide', '2025-05-31 18:07:11', 'user', '[]', 0, 16, NULL),
+(159, 26, 'De rien ! N\'hésitez pas si vous avez d\'autres questions ou besoin d\'aide.', '2025-05-31 18:07:12', 'ai', '[]', 0, 3, 158),
+(160, 26, 'merci', '2025-05-31 19:18:23', 'user', '[]', 0, 16, NULL),
+(161, 26, 'Vous êtes le bienvenu ! N\'hésitez pas si vous avez d\'autres questions.', '2025-05-31 19:18:25', 'ai', '[]', 0, 3, 160),
+(162, 26, 'hello', '2025-05-31 19:27:13', 'user', '[]', 0, 16, NULL),
+(163, 26, 'Bonjour! Comment puis-je vous aider aujourd\'hui?', '2025-05-31 19:27:15', 'ai', '[]', 0, 3, 162),
+(164, 26, 'hello', '2025-05-31 22:10:40', 'user', '[]', 0, 16, NULL),
+(165, 26, 'hello', '2025-05-31 22:11:51', 'user', '[]', 0, 16, NULL),
+(166, 26, 'test', '2025-05-31 22:12:43', 'user', '[]', 0, 16, NULL),
+(167, 26, 'yg', '2025-05-31 22:32:08', 'user', '[]', 0, 16, NULL),
+(168, 26, 'tesyt', '2025-05-31 22:37:30', 'user', '[]', 0, 16, NULL),
+(169, 26, 'test', '2025-05-31 22:38:45', 'user', '[]', 0, 16, NULL),
+(170, 26, 'h', '2025-05-31 22:46:11', 'user', '[]', 0, 16, NULL),
+(171, 26, 'test', '2025-05-31 22:49:55', 'user', '[]', 0, 16, NULL),
+(172, 26, 'hello', '2025-05-31 22:55:53', 'user', '[]', 0, 16, NULL),
+(173, 26, 'hello chat gpt', '2025-06-01 08:47:27', 'user', '[]', 0, 16, NULL),
+(174, 26, 'salut', '2025-06-01 08:51:27', 'user', '[]', 0, 16, NULL),
+(175, 31, 'Bonjour ! Je suis votre assistant virtuel. Comment puis-je vous aider aujourd\'hui ? Décrivez votre problème et je ferai de mon mieux pour le résoudre. Si je ne parviens pas à vous aider, vous pourrez créer un ticket d\'assistance.', '2025-06-01 08:55:06', 'ai', '[]', 0, 4, NULL),
+(176, 31, 'merci', '2025-06-01 08:55:10', 'user', '[]', 0, 17, NULL),
+(177, 31, 'De rien ! N\'hésitez pas à me contacter si vous avez besoin d\'aide à l\'avenir. Bonne journée !', '2025-06-01 08:55:11', 'ai', '[]', 0, 4, 176);
 
 -- --------------------------------------------------------
 
@@ -372,7 +473,7 @@ CREATE TABLE IF NOT EXISTS `notification` (
   PRIMARY KEY (`id`),
   KEY `IDX_BF5476CAFB88E14F` (`utilisateur_id`),
   KEY `IDX_BF5476CA700047D2` (`ticket_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `notification`
@@ -391,7 +492,9 @@ INSERT INTO `notification` (`id`, `utilisateur_id`, `ticket_id`, `titre`, `messa
 (10, 9, 22, 'Nouveau chat disponible', 'Un technicien a créé un canal de discussion pour votre ticket \"Ticket #22 - Problème d\'impression\". Vous pouvez maintenant communiquer directement avec lui.', 'nouveau_ticket', 0, '2025-05-29 10:13:34'),
 (11, 13, 54, 'Ticket résolu', 'Votre ticket \"dqdqz\" a été résolu.', 'ticket_resolu', 0, '2025-05-29 10:14:11'),
 (12, 16, 56, 'Nouveau ticket créé', 'Votre ticket \"test chat\" a été créé avec succès.', 'nouveau_ticket', 0, '2025-05-29 10:15:30'),
-(13, 16, 57, 'Nouveau ticket créé', 'Votre ticket \"test 123\" a été créé avec succès.', 'nouveau_ticket', 0, '2025-05-31 08:48:05');
+(13, 16, 57, 'Nouveau ticket créé', 'Votre ticket \"test 123\" a été créé avec succès.', 'nouveau_ticket', 0, '2025-05-31 08:48:05'),
+(14, 16, 56, 'Ticket résolu', 'Votre ticket \"test chat\" a été résolu.', 'ticket_resolu', 0, '2025-05-31 14:38:26'),
+(15, 16, 56, 'Ticket résolu', 'Votre ticket \"test chat\" a été résolu.', 'ticket_resolu', 0, '2025-05-31 14:38:29');
 
 -- --------------------------------------------------------
 
@@ -409,7 +512,7 @@ CREATE TABLE IF NOT EXISTS `personne` (
   `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UNIQ_FCEC9EFE7927C74` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Déchargement des données de la table `personne`
@@ -431,7 +534,8 @@ INSERT INTO `personne` (`id`, `nom`, `email`, `password`, `roles`, `type`) VALUE
 (13, 'Lucas Petit', 'lucas.petit@3innov.fr', '$2y$13$WRG98hDIXKblEDfowghA9.EM.51RHTWKGpTO6M9TWzgmXiCLZSHpG', '[\"ROLE_USER\"]', 'utilisateur'),
 (14, 'Emma Richard', 'emma.richard@3innov.fr', '$2y$13$Oi1w.cdyTD0ZacFJsxTJaOGbYW2.bVuek.aEnWApgwf8NTuL3rSxC', '[\"ROLE_USER\"]', 'utilisateur'),
 (15, 'ratebTech', 'ratibtech@gmail.com', '$2y$13$5WbsTbghSXo88yZ6YF/AqOiWUOMqjvzZcstlwahfz1q2T7QI3aKVC', '[\"ROLE_USER\", \"ROLE_TECHNICIEN\"]', 'technicien'),
-(16, 'pipi', 'ratib132@gmail.com', '$2y$13$9U6nBmWZmZF73k4dZF2Cc.xelPMvt.xA8hK3X8Q.3lFH/L/cskJ8W', '[\"ROLE_USER\"]', 'utilisateur');
+(16, 'pipi', 'ratib132@gmail.com', '$2y$13$9U6nBmWZmZF73k4dZF2Cc.xelPMvt.xA8hK3X8Q.3lFH/L/cskJ8W', '[\"ROLE_USER\"]', 'utilisateur'),
+(17, 'ratebTEST', 'tutii10er@gmail.com', '$2y$13$GIT3FEK7qXj54ixz1obS7e5y.S8Lj8flWDNzzveoK3Rg0viWNspvG', '[\"ROLE_USER\"]', 'utilisateur');
 
 -- --------------------------------------------------------
 
@@ -652,7 +756,7 @@ INSERT INTO `ticket` (`id`, `utilisateur_id`, `technicien_id`, `categorie_id`, `
 (53, 13, 4, 3, 24, 'jsp', 'Conversation avec l\'assistant IA:\r\n\r\n- hello', 'en cours', 'haute', '2025-03-10 19:07:47', NULL, NULL, NULL, 0),
 (54, 13, 4, 1, 25, 'dqdqz', 'Conversation avec l\'assistant IA:\r\n\r\n- hello\r\n- merci\r\n- ok', 'résolu', 'haute', '2025-03-10 19:22:31', '2025-05-29 10:14:11', NULL, 'voilà', 0),
 (55, 16, 15, 4, 27, 'dqdqz', 'Conversation avec l\'assistant IA:\r\n\r\n- hello comment ça va\r\n- comment crée un ticket', 'clôturé', 'haute', '2025-05-23 22:42:05', '2025-05-23 22:43:37', '2025-05-25 17:25:49', 'blablabla', 1),
-(56, 16, 4, 5, 29, 'test chat', 'Conversation avec l\'assistant IA:\r\n\r\n- hello comment ça va\r\n- comment crée un ticket', 'en cours', 'normale', '2025-05-29 10:15:29', NULL, NULL, NULL, 0),
+(56, 16, 4, 5, 29, 'test chat', 'Conversation avec l\'assistant IA:\r\n\r\n- hello comment ça va\r\n- comment crée un ticket', 'résolu', 'normale', '2025-05-29 10:15:29', '2025-05-31 14:38:29', NULL, NULL, 0),
 (57, 16, NULL, 3, 30, 'test 123', 'Conversation avec l\'assistant IA:\r\n\r\n- hello comment ça va\r\n- comment crée un ticket\r\n- merci\r\n- je veux te remercier c\'est tout\r\n- salut mon pote', 'nouveau', 'normale', '2025-05-31 08:48:03', NULL, NULL, NULL, 0);
 
 -- --------------------------------------------------------
@@ -684,7 +788,8 @@ INSERT INTO `utilisateur` (`id`) VALUES
 (13),
 (14),
 (15),
-(16);
+(16),
+(17);
 
 --
 -- Contraintes pour les tables déchargées

@@ -26,7 +26,7 @@ class Message
     /**
      * Contenu du message
      */
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: Types::TEXT)]
     #[Groups(['message:read', 'message:write', 'chatbox:item:read'])]
     private ?string $message = null;
 
