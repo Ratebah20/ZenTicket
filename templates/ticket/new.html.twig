@@ -41,7 +41,7 @@
 
                     <div class="card mt-4 bg-secondary bg-opacity-25 border-secondary">
                         <div class="card-header border-secondary">
-                            <h5 class="card-title mb-0">Commentaire initial (optionnel)</h5>
+                            <h5 class="card-title mb-0 text-white">Commentaire initial (optionnel)</h5>
                         </div>
                         <div class="card-body">
                             {{ form_row(form.commentaireInitial) }}
@@ -53,10 +53,10 @@
 
             <div class="mt-3">
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Créer le ticket
+                    <i class="fas fa-save text-white"></i> Créer le ticket
                 </button>
                 <a href="{{ path('app_profile_tickets') }}" class="btn btn-outline-light">
-                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                    <i class="fas fa-arrow-left text-white"></i> Retour à la liste
                 </a>
             </div>
         {{ form_end(form) }}

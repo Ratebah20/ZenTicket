@@ -199,15 +199,15 @@
                     <div class="chat-header">
                         <h2>{{ chatbox.ticket.titre }}</h2>
                         <div class="chat-actions">
-                            <button id="test-mercure-button" class="btn btn-sm btn-outline-info">
-                                <i class="fas fa-sync-alt"></i> Tester Mercure
-                            </button>
+                            <span class="chat-with">Chat avec le technicien {{ chatbox.ticket.technicien ? chatbox.ticket.technicien.nom : 'Equipe support' }}</span>
                             <button id="reconnect-button" class="btn btn-sm btn-outline-light" style="display: none;">
                                 <i class="fas fa-sync-alt"></i> Reconnecter
                             </button>
                         </div>
                     </div>
                     <div class="messages-container" id="messages">
+                        <div class="system-message">
+                        </div>
                         <div class="typing-indicator" style="display: none;">
                             <span class="typing-text"></span>
                         </div>
@@ -216,7 +216,7 @@
                     <div class="message-input">
                         <div class="flex-grow-1 position-relative">
                             <textarea 
-                                class="form-control bg-dark text-white border-secondary" 
+                                class="form-control bg-dark text-white border-secondary text-white" 
                                 id="messageInput" 
                                 rows="2" 
                                 placeholder="Écrivez votre message..."

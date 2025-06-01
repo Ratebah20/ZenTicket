@@ -47,7 +47,12 @@
                 <div class="mt-4">
                     <h5>Description</h5>
                     <div class="card bg-secondary bg-opacity-25 border-secondary">
-                        <div class="card-body">
+                        <div class="card-body text-white">
+                            {% if ticket.description starts with 'Conversation avec l\'assistant IA' %}
+                                <div class="system-message mb-3">
+                                    <p class="text-info"><i class="fas fa-robot me-2"></i>Cette conversation a été initiée avec notre assistant IA</p>
+                                </div>
+                            {% endif %}
                             {{ ticket.description|nl2br }}
                         </div>
                     </div>
@@ -119,7 +124,7 @@
                             </div>
                         {% endif %}
                     </div>
-                    <div class="mt-2">
+                    <div class="mt-2 text-white">
                         {{ commentaire.contenu|nl2br }}
                     </div>
                     {% if commentaire.pieceJointe %}

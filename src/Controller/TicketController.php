@@ -56,15 +56,19 @@ class TicketController extends AbstractController
         if ($aiChatId) {
             $chatbox = $entityManager->getRepository(Chatbox::class)->find($aiChatId);
             if ($chatbox) {
-                // Récupérer les messages de l'utilisateur pour le contexte du ticket
+                // Récupérer tous les messages (utilisateur et IA) pour le contexte du ticket
                 $messages = $entityManager->getRepository(Message::class)
-                    ->findBy(['chatbox' => $chatbox, 'messageType' => MessageType::USER], ['timestamp' => 'ASC']);
+                    ->findBy(['chatbox' => $chatbox], ['timestamp' => 'ASC']);
                 
                 if (\count($messages) > 0) {
                     // Construire une description à partir des messages
                     $description = "Conversation avec l'assistant IA:\n\n";
                     foreach ($messages as $message) {
-                        $description .= "- " . $message->getMessage() . "\n";
+                        if ($message->getMessageType() === MessageType::USER) {
+                            $description .= "- Vous: " . $message->getMessage() . "\n";
+                        } else if ($message->getMessageType() === MessageType::AI) {
+                            $description .= "- Assistant IA: " . $message->getMessage() . "\n";
+                        }
                     }
                     
                     // Pré-remplir le formulaire avec la description
