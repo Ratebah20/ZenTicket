@@ -32,7 +32,6 @@ yarn-error.log
 ###< symfony/webpack-encore-bundle ###
 
 ###> lexik/jwt-authentication-bundle ###
-/config/jwt/*.pem
 ###< lexik/jwt-authentication-bundle ###
 
 ###> api-platform/core ###
@@ -41,14 +40,6 @@ yarn-error.log
 /config/packages/api_platform.yaml
 /config/packages/*/api_platform.yaml
 ###< api-platform/core ###
-
-###> docker ###
-# Fichiers Docker locaux
-docker/mysql/data/
-docker/mysql/*.sql
-docker/mercure/data/
-.docker/
-###< docker ###
 
 ###> IDE et éditeurs ###
 .idea/
@@ -71,7 +62,6 @@ Thumbs.db
 
 ###> Fichiers de sauvegarde ###
 *.bak
-*.backup
 *.old
 ###< Fichiers de sauvegarde ###
 
@@ -82,8 +72,7 @@ mercure.db
 
 ###> Fichiers spécifiques au projet ###
 # Backup de base de données
-*.sql
-!docker/mysql/init.sql
+
 # Fichiers uploadés
 /public/uploads/
 # Fichiers de test
